@@ -58,7 +58,7 @@ app.get('/', (req, res) => {
 })
 
 app.get('/login', (req, res) => {
-  const storedId = req.cookies ? cookieParser.signedCookie(req.signedCookies['id'], SECRET_KEY) : null
+  const storedId = req.signedCookies ? req.signedCookies['userId'] : null
 
   if (storedId) {
     res.redirect('http://localhost:3000/')
@@ -82,7 +82,7 @@ app.get('/login', (req, res) => {
 })
 
 app.get('/callback', (req, res) => {
-  const storedId = req.cookies ? cookieParser.signedCookie(req.signedCookies['id'], SECRET_KEY) : null
+  const storedId = req.signedCookies ? req.signedCookies['userId'] : null
 
   if (storedId) {
     res.redirect('http://localhost:3000/')
@@ -92,7 +92,7 @@ app.get('/callback', (req, res) => {
   const code = req.query.code
   const state = req.query.state
   const error = req.query.error
-  const storedState = req.cookies ? cookieParser.signedCookie(req.signedCookies['state'], SECRET_KEY) : null
+  const storedState = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['state'], SECRET_KEY) : null
   
   if (error || state !== storedState) {
     res.redirect('http://localhost:3000/')
@@ -151,18 +151,18 @@ function requestUserInfo(res, resToken) {
 }
 
 async function insertUserDatabase(res, userData, resToken) {
+  const currentTime = new Date()
+  const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
+  const picture = userData.images.length > 0 ? userData.images[0].url : ''
+
+  res.cookie('userId', userData.id, {signed: true})
+  res.cookie('access_token', resToken.access_token, {signed: true})
+  res.cookie('refresh_token', resToken.refresh_token, {signed: true})
+  res.cookie('expireTime', expireTime.toString(), {signed: true})
+
   const rows = await knex('Users').select('*').where('userId', '=', userData.id)
 
   if (rows.length !== 1) {
-    const currentTime = new Date()
-    const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
-    const picture = userData.images.length > 0 ? userData.images[0].url : ''
-
-    res.cookie('userId', userData.id, {signed: true})
-    res.cookie('access_token', resToken.access_token, {signed: true})
-    res.cookie('refresh_token', resToken.refresh_token, {signed: true})
-    res.cookie('expireTime', expireTime.toString(), {signed: true})
-
     await knex('Users').insert({userId: userData.id, name: userData.display_name, picture: picture}).then(() => {tmpDB()})
   }
 
