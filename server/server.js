@@ -2,7 +2,6 @@ const client_id = '43aa644597e44cdfb605b31a5f27aa3a'
 const client_secret = 'c71b5fef68404b9eb73b16600c12cb2b'
 const redirect_uri = 'http://localhost:8000/callback'
 const scope = 'user-read-private user-read-email user-read-recently-played'
-const stateKey = 'spotify_auth_state'
 const dbPath = './.data/statify.db'
 const PORT = 8000
 const SECRET_KEY = 'p2s5v8y/B?E(G+KbPeShVmYq3t6w9z$C'
@@ -44,7 +43,7 @@ app.use(cookieEncrypter(SECRET_KEY))
 
 /*
 app.use(session({
-  secret: SECRET_KEY,
+  secret: process.env.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
   store: store,
@@ -69,7 +68,7 @@ app.get('/login', (req, res) => {
   const randomNumber = Math.random().toString()
   const state = randomNumber.substring(2, randomNumber.length)
 
-  res.cookie(stateKey, state, {signed: true})
+  res.cookie('state', state, {signed: true})
 
   const params = new URLSearchParams()
 
@@ -93,12 +92,12 @@ app.get('/callback', (req, res) => {
   const code = req.query.code
   const state = req.query.state
   const error = req.query.error
-  const storedState = req.cookies ? cookieParser.signedCookie(req.signedCookies[stateKey], SECRET_KEY) : null
+  const storedState = req.cookies ? cookieParser.signedCookie(req.signedCookies['state'], SECRET_KEY) : null
   
   if (error || state !== storedState) {
     res.redirect('http://localhost:3000/')
   } else {
-    res.clearCookie(stateKey)
+    res.clearCookie('state')
 
     axios.post(
       'https://accounts.spotify.com/api/token', null, {
@@ -114,7 +113,7 @@ app.get('/callback', (req, res) => {
       }
     )
     .then((resToken) => {
-      requestUserId(req, res, resToken.data)
+      requestUserInfo(res, resToken.data)
     })
     .catch(() => {
       res.redirect('http://localhost:3000/')
@@ -134,7 +133,7 @@ app.get('*', (req, res) => {
   res.redirect('http://localhost:3000/')
 })
 
-function requestUserId(req, res, resToken) {
+function requestUserInfo(res, resToken) {
   axios.get(
     'https://api.spotify.com/v1/me', {
       headers: {
@@ -144,26 +143,28 @@ function requestUserId(req, res, resToken) {
     }, null
   )
   .then((resUser) => {
-    insertUserDatabase(req, res, resUser.data.id, resToken)
+    insertUserDatabase(res, resUser.data, resToken)
   })
   .catch((err) => {
-    console.log(err)
     res.redirect('http://localhost:3000/')
   })
 }
 
-async function insertUserDatabase(req, res, userId, resToken) {
-  const rows = await knex('Users').select('*').where('userId', '=', userId)
-
-  //console.log(rows)
+async function insertUserDatabase(res, userData, resToken) {
+  const rows = await knex('Users').select('*').where('userId', '=', userData.id)
 
   if (rows.length !== 1) {
-    const currentTime = new Date();
-    const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000);
-    await knex('Users').insert({userId: userId, access_token: resToken.access_token, refresh_token: resToken.refresh_token, expireTime: expireTime.toString()}).then(() => {tmpDB()})
+    const currentTime = new Date()
+    const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
+    const picture = userData.images.length > 0 ? userData.images[0].url : ''
+
+    res.cookie('userId', userData.id, {signed: true})
+    res.cookie('access_token', resToken.access_token, {signed: true})
+    res.cookie('refresh_token', resToken.refresh_token, {signed: true})
+    res.cookie('expireTime', expireTime.toString(), {signed: true})
+
+    await knex('Users').insert({userId: userData.id, name: userData.display_name, picture: picture}).then(() => {tmpDB()})
   }
-  
-  res.cookie('id', userId, {signed: true})
 
   res.redirect('http://localhost:3000/')
 }
@@ -172,9 +173,8 @@ async function createDatabase() {
   if (!dbExist) {
     await knex.schema.createTable('Users', function (table) {
       table.string('userID').primary().notNullable()
-      table.string('access_token')
-      table.string('refresh_token')
-      table.string('expireTime')
+      table.string('name')
+      table.string('picture')
     })
     await knex.schema.createTable('Friends', function (table) {
       table.string('userID').notNullable()
@@ -205,7 +205,7 @@ async function createDatabase() {
 
 async function tmpDB() {
   const rows = await knex('Users').select('*')
-  console.log(rows);
+  console.log(rows)
 }
 
 app.listen(PORT, async () => {

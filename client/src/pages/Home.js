@@ -7,7 +7,7 @@ const Home = () => {
   const [connected, setConnected] = useState(false)
 
   useEffect(() => {
-    setConnected(document.cookie.indexOf('id=') === 0)
+    setConnected(document.cookie.indexOf('userId=') === 0)
   }, [document.cookie]);
 
   return (
