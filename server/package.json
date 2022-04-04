@@ -1,0 +1,20 @@
+{
+  "name": "statify",
+  "version": "0.0.1",
+  "description": "statify",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^0.26.1",
+    "connect-redis": "^6.1.3",
+    "cookie-encrypter": "^1.0.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "~4.16.0",
+    "knex": "^0.16.5",
+    "sqlite3": "^5.0.2"
+  },
+  "license": "MIT"
+}
