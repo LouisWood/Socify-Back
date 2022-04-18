@@ -1,28 +1,14 @@
-const client_id = '43aa644597e44cdfb605b31a5f27aa3a'
-const client_secret = 'c71b5fef68404b9eb73b16600c12cb2b'
-const redirect_uri = 'http://localhost:8000/callback'
-const scope = 'user-read-private user-read-email user-read-recently-played'
-const dbPath = './.data/statify.db'
-const PORT = 8000
-const SECRET_KEY = 'p2s5v8y/B?E(G+KbPeShVmYq3t6w9z$C'
+const { createDatabaseIfNotExist } = require('./modules/database')
+const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
+const { insertUserInDatabase, getUserInfo, getUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
 const cookieParser = require('cookie-parser')
 const cookieEncrypter = require('cookie-encrypter')
 const { URLSearchParams } = require('url')
-const axios = require('axios').default
-const fs = require("fs")
 
-const dbExist = fs.existsSync(dbPath)
-
-const knex = require('knex')({
-  client: 'sqlite3',
-  connection: {
-    filename: dbPath
-  },
-  useNullAsDefault: true
-})
+require('dotenv').config()
 
 /*
 const store = new KnexSessionStore({
@@ -38,12 +24,12 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
-app.use(cookieParser(SECRET_KEY))
-app.use(cookieEncrypter(SECRET_KEY))
+app.use(cookieParser(process.env.SECRET_KEY))
+app.use(cookieEncrypter(process.env.SECRET_KEY))
 
 /*
 app.use(session({
-  secret: process.env.SECRET_KEY,
+  secret: process.env.process.env.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
   store: store,
@@ -58,9 +44,9 @@ app.get('/', (req, res) => {
 })
 
 app.get('/login', (req, res) => {
-  const storedId = req.signedCookies ? req.signedCookies['userId'] : null
+  const storedID = req.signedCookies ? req.signedCookies['userID'] : null
 
-  if (storedId) {
+  if (storedID) {
     res.redirect('http://localhost:3000/')
     return
   }
@@ -72,19 +58,19 @@ app.get('/login', (req, res) => {
 
   const params = new URLSearchParams()
 
-  params.set('client_id', client_id)
+  params.set('client_id', process.env.CLIENT_ID)
   params.set('response_type', 'code')
-  params.set('redirect_uri', encodeURI(redirect_uri))
+  params.set('redirect_uri', encodeURI(process.env.REDIRECT_URI))
   params.set('state', state)
-  params.set('scope', scope)
+  params.set('scope', process.env.SCOPE)
   
   res.redirect('https://accounts.spotify.com/authorize?' + params)
 })
 
-app.get('/callback', (req, res) => {
-  const storedId = req.signedCookies ? req.signedCookies['userId'] : null
+app.get('/callback', async (req, res) => {
+  const storedID = req.signedCookies ? req.signedCookies['userID'] : null
 
-  if (storedId) {
+  if (storedID) {
     res.redirect('http://localhost:3000/')
     return
   }
@@ -92,123 +78,114 @@ app.get('/callback', (req, res) => {
   const code = req.query.code
   const state = req.query.state
   const error = req.query.error
-  const storedState = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['state'], SECRET_KEY) : null
+  const storedState = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['state'], process.env.SECRET_KEY) : null
   
-  if (error || state !== storedState) {
-    res.redirect('http://localhost:3000/')
-  } else {
+  if (!error || state === storedState) {
     res.clearCookie('state')
 
-    axios.post(
-      'https://accounts.spotify.com/api/token', null, {
-        params: {
-          code: code,
-          redirect_uri: encodeURI(redirect_uri),
-          grant_type: 'authorization_code'
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: 'Basic ' + Buffer.from(client_id + ':' + client_secret, 'utf-8').toString('base64')
-        }
-      }
-    )
-    .then((resToken) => {
-      requestUserInfo(res, resToken.data)
-    })
-    .catch(() => {
-      res.redirect('http://localhost:3000/')
-    })
+    const resToken = await getAccessToken(code)
+
+    if ('data' in resToken) {
+      const resUser = await getUserInfo(resToken.data.access_token)
+
+      if ('data' in resUser)
+        await insertUserInDatabase(res, resUser.data, resToken)
+    }
   }
+  res.redirect('http://localhost:3000/')
 })
 
 //app.get('/profil', requestUserInformation)
 
 //app.get('/logout', logoutUser)
 
-app.post('/home', (req, res) => {
-  //return all data to be shown
+app.post('/me', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+
+  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+  const response = await getUserInfo(access_token)
+  
+  res.json(response)
+})
+
+app.post('/me/playlists', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+
+  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+  const response = await getUserPlaylists(access_token)
+  
+  res.json(response)
+})
+
+app.post('/me/top/artists', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+
+  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+  const response = await getCurrentUserTopArtists(access_token)
+  
+  res.json(response)
+})
+
+app.post('/me/top/tracks', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+
+  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+  const response = await getCurrentUserTopTracks(access_token)
+  
+  res.json(response)
+})
+
+app.post('/users/me/playlists', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+  
+  if (req.signedCookies['userID'] && 'playlistName' in req.body && 'playlistDesc' in req.body) {
+    const userID = cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY)
+    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const playlistName = req.body.playlistName
+    const playlistDesc = req.body.playlistDesc
+    const response = await setCurrentUserPlaylist(userID, access_token, playlistName, playlistDesc)
+
+    res.json(response)
+  } else {
+    res.json({
+      error: 'error'
+    })
+  }
+})
+
+app.post('/playlists/playlistID/tracks', async (req, res) => {
+  const exit = await checkIfTokenIsExpired(req, res)
+  if (exit)
+    return
+  
+  if ('playlistID' in req.body) {
+    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const playlistID = req.body.playlistID
+    const response = await fillCurrentUserPlaylist(access_token, playlistID)
+    
+    res.json(response)
+  } else {
+    res.json({
+      error: 'error'
+    })
+  }
 })
 
 app.get('*', (req, res) => {
   res.redirect('http://localhost:3000/')
 })
 
-function requestUserInfo(res, resToken) {
-  axios.get(
-    'https://api.spotify.com/v1/me', {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + resToken.access_token
-      }
-    }, null
-  )
-  .then((resUser) => {
-    insertUserDatabase(res, resUser.data, resToken)
-  })
-  .catch((err) => {
-    res.redirect('http://localhost:3000/')
-  })
-}
-
-async function insertUserDatabase(res, userData, resToken) {
-  const currentTime = new Date()
-  const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
-  const picture = userData.images.length > 0 ? userData.images[0].url : ''
-
-  res.cookie('userId', userData.id, {signed: true})
-  res.cookie('access_token', resToken.access_token, {signed: true})
-  res.cookie('refresh_token', resToken.refresh_token, {signed: true})
-  res.cookie('expireTime', expireTime.toString(), {signed: true})
-
-  const rows = await knex('Users').select('*').where('userId', '=', userData.id)
-
-  if (rows.length !== 1) {
-    await knex('Users').insert({userId: userData.id, name: userData.display_name, picture: picture}).then(() => {tmpDB()})
-  }
-
-  res.redirect('http://localhost:3000/')
-}
-
-async function createDatabase() {
-  if (!dbExist) {
-    await knex.schema.createTable('Users', function (table) {
-      table.string('userID').primary().notNullable()
-      table.string('name')
-      table.string('picture')
-    })
-    await knex.schema.createTable('Friends', function (table) {
-      table.string('userID').notNullable()
-      table.string('friendID').notNullable()
-      table.foreign('userID').references('Users.userID')
-      table.foreign('friendID').references('Users.userID')
-    })
-    await knex.schema.createTable('Discussions', function (table) {
-      table.increments('discussionID').primary()
-      table.string('category').notNullable()
-    })
-    await knex.schema.createTable('Messages', function (table) {
-      table.increments('messageID').primary()
-      table.string('userID').notNullable()
-      table.string('category').notNullable()
-      table.string('content').notNullable()
-      table.foreign('userID').references('Users.userID')
-      table.foreign('category').references('Discussions.category')
-    })
-    await knex.schema.createTable('Participate', function (table) {
-      table.string('userID').notNullable()
-      table.integer('discussionID').notNullable()
-      table.foreign('userID').references('Users.userID')
-      table.foreign('discussionID').references('Discussions.discussionID')
-    })
-  }
-}
-
-async function tmpDB() {
-  const rows = await knex('Users').select('*')
-  console.log(rows)
-}
-
-app.listen(PORT, async () => {
-  console.log("Listening on port " + PORT)
-  await createDatabase()
+app.listen(8000, async () => {
+  console.log('Listening on port 8000')
+  await createDatabaseIfNotExist()
 })

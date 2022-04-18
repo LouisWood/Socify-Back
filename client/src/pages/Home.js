@@ -3,7 +3,7 @@ import Login from '../components/Login'
 
 const Home = () => {
   return (
-    document.cookie.indexOf('userId=') === 0 ? <Dashboard /> : <Login />
+    document.cookie.indexOf('userID=') !== -1 ? <Dashboard /> : <Login />
   )
 }
 
