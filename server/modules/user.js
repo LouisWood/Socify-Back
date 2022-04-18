@@ -40,10 +40,10 @@ const getUserInfo = async (access_token) => {
   return response
 }
 
-const getUserPlaylists = async (access_token) => {
+const getCurrentUserPlaylists = async (access_token) => {
   const limit = 20
 
-  const response = await axios.get(`/me//playlists?limit=${limit}`, {
+  const response = await axios.get(`/me/playlists?limit=${limit}`, {
     headers: {
       Authorization: 'Bearer ' + access_token
     }
@@ -108,7 +108,7 @@ const getCurrentUserTopTracks = async (access_token) => {
   return response
 }
 
-const setCurrentUserPlaylist = async (userID, access_token, playlistName, playlistDesc) => {
+const setUserPlaylist = async (userID, access_token, playlistName, playlistDesc) => {
   const response = await axios.post(
     `/users/${userID}/playlists`, {
     headers: {
@@ -132,6 +132,25 @@ const setCurrentUserPlaylist = async (userID, access_token, playlistName, playli
 }
 
 const fillCurrentUserPlaylist = async (access_token, playlistID, tracksUris) => {
+  const response = await axios.post(
+    `https://api.spotify.com/v1/playlists/${playlistID}/tracks`, {
+    headers: {
+      Authorization: 'Bearer ' + access_token
+    },
+    uris: tracksUris
+  })
+  .then(resUser => {
+    return {
+      data: resUser.data
+    }
+  })
+  .catch(() => {
+    return {
+      error: 'error'
+    }
+  })
+
+  return response
 }
 
-module.exports = { insertUserInDatabase, getUserInfo, getUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist }
+module.exports = { insertUserInDatabase, getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist }

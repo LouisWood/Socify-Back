@@ -1,6 +1,6 @@
 const { createDatabaseIfNotExist } = require('./modules/database')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { insertUserInDatabase, getUserInfo, getUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
+const { insertUserInDatabase, getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
@@ -116,7 +116,7 @@ app.post('/me/playlists', async (req, res) => {
     return
 
   const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
-  const response = await getUserPlaylists(access_token)
+  const response = await getCurrentUserPlaylists(access_token)
   
   res.json(response)
 })
@@ -153,7 +153,7 @@ app.post('/users/me/playlists', async (req, res) => {
     const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
     const playlistName = req.body.playlistName
     const playlistDesc = req.body.playlistDesc
-    const response = await setCurrentUserPlaylist(userID, access_token, playlistName, playlistDesc)
+    const response = await setUserPlaylist(userID, access_token, playlistName, playlistDesc)
 
     res.json(response)
   } else {
