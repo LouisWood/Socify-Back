@@ -1,21 +1,4 @@
-const insertUserInDatabase = async (res, userData, tokenData) => {
-  const currentTime = new Date()
-  const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
-  const picture = userData.images.length > 0 ? userData.images[0].url : ''
-
-  res.cookie('userID', userData.id, {signed: true})
-  res.cookie('access_token', tokenData.access_token, {signed: true})
-  res.cookie('refresh_token', tokenData.refresh_token, {signed: true})
-  res.cookie('expireTime', expireTime.toString(), {signed: true})
-
-  const rows = await knex('Users').select('*').where('userID', '=', userData.id)
-
-  if (rows.length !== 1) {
-    await knex('Users').insert({userID: userData.id, name: userData.display_name, picture: picture})
-  }
-
-  res.redirect('http://localhost:3000/')
-}
+const axios = require('axios').default
 
 axios.defaults.baseURL = 'https://api.spotify.com/v1';
 axios.defaults.headers['Content-Type'] = 'application/json';
@@ -153,4 +136,4 @@ const fillCurrentUserPlaylist = async (access_token, playlistID, tracksUris) => 
   return response
 }
 
-module.exports = { insertUserInDatabase, getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist }
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist }

@@ -1,4 +1,5 @@
 const fs = require('fs')
+require('dotenv').config()
 const dbExist = fs.existsSync(process.env.DB_PATH)
 const knex = require('knex')({
   client: 'sqlite3',
@@ -43,4 +44,21 @@ const createDatabaseIfNotExist = async () => {
   }
 }
 
-module.exports = { createDatabaseIfNotExist }
+const insertUserInDatabase = async (res, userData, tokenData) => {
+  const currentTime = new Date()
+  const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
+  const picture = userData.images.length > 0 ? userData.images[0].url : ''
+
+  res.cookie('userID', userData.id, {signed: true})
+  res.cookie('access_token', tokenData.data.access_token, {signed: true})
+  res.cookie('refresh_token', tokenData.data.refresh_token, {signed: true})
+  res.cookie('expireTime', expireTime.toString(), {signed: true})
+
+  const rows = await knex('Users').select('*').where('userID', '=', userData.id)
+
+  if (rows.length !== 1) {
+    await knex('Users').insert({userID: userData.id, name: userData.display_name, picture: picture})
+  }
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase }

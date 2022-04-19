@@ -1,6 +1,7 @@
-const { createDatabaseIfNotExist } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase } = require('./modules/database')
+const { getArtistTopTrack, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { insertUserInDatabase, getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
+const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
@@ -99,58 +100,70 @@ app.get('/callback', async (req, res) => {
 
 //app.get('/logout', logoutUser)
 
-app.post('/me', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+app.get('/me', async (req, res) => {
+  console.log(req.signedCookies['access_token'])
+
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
-
-  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+  
   const response = await getUserInfo(access_token)
   
   res.json(response)
 })
 
 app.post('/me/playlists', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
 
-  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
   const response = await getCurrentUserPlaylists(access_token)
   
   res.json(response)
 })
 
 app.post('/me/top/artists', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
 
-  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
   const response = await getCurrentUserTopArtists(access_token)
   
   res.json(response)
 })
 
 app.post('/me/top/tracks', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
 
-  const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
   const response = await getCurrentUserTopTracks(access_token)
   
   res.json(response)
 })
 
 app.post('/users/me/playlists', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
   
   if (req.signedCookies['userID'] && 'playlistName' in req.body && 'playlistDesc' in req.body) {
     const userID = cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY)
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
     const playlistName = req.body.playlistName
     const playlistDesc = req.body.playlistDesc
     const response = await setUserPlaylist(userID, access_token, playlistName, playlistDesc)
@@ -164,14 +177,76 @@ app.post('/users/me/playlists', async (req, res) => {
 })
 
 app.post('/playlists/playlistID/tracks', async (req, res) => {
-  const exit = await checkIfTokenIsExpired(req, res)
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
   if (exit)
     return
   
   if ('playlistID' in req.body) {
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
     const playlistID = req.body.playlistID
     const response = await fillCurrentUserPlaylist(access_token, playlistID)
+    
+    res.json(response)
+  } else {
+    res.json({
+      error: 'error'
+    })
+  }
+})
+
+app.post('/artists/artistID/top-tracks', async (req, res) => {
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
+  if (exit)
+    return
+  
+  if ('artistID' in req.body) {
+    const artistID = req.body.artistID
+    const response = await getArtistTopTrack(access_token, artistID)
+    
+    res.json(response)
+  } else {
+    res.json({
+      error: 'error'
+    })
+  }
+})
+
+app.post('/audio-features/trackID', async (req, res) => {
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
+  if (exit)
+    return
+  
+  if ('trackID' in req.body) {
+    const trackID = req.body.trackID
+    const response = await getTracksInfo(access_token, trackID)
+    
+    res.json(response)
+  } else {
+    res.json({
+      error: 'error'
+    })
+  }
+})
+
+app.post('/playlists/playlistID', async (req, res) => {
+  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
+  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
+  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+  const exit = await checkIfTokenIsExpired(access_token, refresh_token, expireTime, res)
+  if (exit)
+    return
+  
+  if ('playlistID' in req.body) {
+    const playlistID = req.body.playlistID
+    const response = await getTracksInfo(access_token, playlistID)
     
     res.json(response)
   } else {

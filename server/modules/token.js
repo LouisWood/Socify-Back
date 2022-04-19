@@ -1,11 +1,12 @@
+const cookieParser = require('cookie-parser')
 const axios = require('axios').default
 require('dotenv').config()
 
-const checkIfTokenIsExpired = async (req, res) => {
-  const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], SECRET_KEY) : null
-  const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], SECRET_KEY) : null
-  const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], SECRET_KEY) : null
-
+const checkIfTokenIsExpired = async (access_token, refresh_token, expireTime, res) => {
+  console.log(access_token)
+  console.log(refresh_token)
+  console.log(expireTime)
+  
   if (access_token && refresh_token && expireTime) {
     if ((new Date()).getTime() >= Date.parse(expireTime)) {
       return await refreshToken(refresh_token, res)
@@ -44,9 +45,10 @@ const refreshToken = async (refresh_token, res) => {
     return false
   })
   .catch(error => {
-    if ('response' in error && 'status' in error.response && error.response.status === 401) {
+    if ('response' in error && 'status' in error.response && error.response.status === 401)
       deleteAndRedirect(res)
-    }
+    else
+      res.redirect('http://localhost:3000')
     return true
   })
 

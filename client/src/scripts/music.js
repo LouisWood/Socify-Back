@@ -1,3 +1,16 @@
+import axios from 'axios'
+
+axios.defaults.baseURL = 'http://localhost:8000'
+
+/**
+ * Calculer la moyenne des éléments d'un tableau
+ * https://poopcode.com/calculate-the-average-of-an-array-of-numbers-in-javascript/
+ * @param {} arr 
+ * @returns 
+ */
+const average = arr => 
+    arr.reduce((a,b) => a + b, 0) / arr.length
+
 export const getTracksAverageStats = async (tracks) => {
     let tabAcousticness = []
     let tabDanceability = []
@@ -27,21 +40,21 @@ export const getTracksAverageStats = async (tracks) => {
 
 export const getArtistTopTrack = async (artistID) => {
     const response = await axios.post('/artists/artistID/top-tracks', {
-      artistID: artistID
+        artistID: artistID
     })
     return 'data' in response ? response.data : null
-  }
-  
-  export const getTracksinfo = async (trackID) => {
+}
+
+export const getTracksInfo = async (trackID) => {
     const response = await axios.post('/audio-features/trackID', {
-      trackID: trackID
+        trackID: trackID
     })
     return 'data' in response ? response.data : null
-  }
-  
-  export const getPlaylistByID = async (playlistID) => {
+}
+
+export const getPlaylistByID = async (playlistID) => {
     const response = await axios.post('/playlists/playlistID', {
-      playlistID: playlistID
+        playlistID: playlistID
     })
     return 'data' in response ? response.data : null
-  }
+}
