@@ -94,7 +94,7 @@ const pushPlaylist = async (type, items, profile, range) => {
             break;
     }
 
-    const playlist = await setCurrentUserPlaylist(profile.id, playlistName, playlistDesc);
+    const playlist = await setCurrentUserPlaylist(playlistName, playlistDesc);
     console.log(playlist);
     if (playlist) {
         const {dataTracks} = await fillCurrentUserPlaylist(playlist.id, tracksUris);

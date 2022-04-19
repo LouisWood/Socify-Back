@@ -92,13 +92,16 @@ const getCurrentUserTopTracks = async (access_token) => {
 }
 
 const setCurrentUserPlaylist = async (userID, access_token, playlistName, playlistDesc) => {
-    const response = await axios.post(
-        `/users/${userID}/playlists`, {
+    const response = await axios({
+        method: "POST",
+        url: `/users/${userID}/playlists`,
         headers: {
             Authorization: 'Bearer ' + access_token
         },
-        name: playlistName,
-        description: playlistDesc
+        data: JSON.stringify({
+            name: playlistName,
+            description: playlistDesc
+        })
     })
     .then(resUser => {
         return {
@@ -116,14 +119,15 @@ const setCurrentUserPlaylist = async (userID, access_token, playlistName, playli
 }
 
 const fillCurrentUserPlaylist = async (access_token, playlistID, tracksUris) => {
-    const response = await axios.post(
-        `/playlists/${playlistID}/tracks`, {
+    const response = await axios({
+        method: "POST",
+        url: `/playlists/${playlistID}/tracks`,
         headers: {
             Authorization: 'Bearer ' + access_token
         },
-        body: {
+        data: JSON.stringify({
             uris: tracksUris
-        }
+        })
     })
     .then(resUser => {
         return {
