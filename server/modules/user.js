@@ -114,7 +114,6 @@ const setCurrentUserPlaylist = async (userID, access_token, playlistName, playli
         }
     })
 
-    console.log(response)
     return response
 }
 

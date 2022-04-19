@@ -95,7 +95,7 @@ const pushPlaylist = async (type, items, profile, range) => {
     }
 
     const playlist = await setCurrentUserPlaylist(playlistName, playlistDesc);
-    console.log(playlist);
+    
     if (playlist) {
         const {dataTracks} = await fillCurrentUserPlaylist(playlist.id, tracksUris);
         toast.success("✨ Playlist générée ✨", {delay: 0, theme: "dark"});
