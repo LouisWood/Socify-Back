@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
-import { getCurrentUserTopTracks, getCurrentUserProfile } from "../scripts/user";
-import { TrackList, SectionWrapper, RangeButton } from "../components";
-import { PlaylistGenButton } from "../components";
-import { catchErrors } from '../utils'
+import { useState, useEffect } from 'react';
+import { getCurrentUserTopTracks, getCurrentUserProfile } from '../scripts/user';
+import { TrackList, SectionWrapper, RangeButton } from '../components';
+import { PlaylistGenButton } from '../components';
+import { catchErrors } from '../utils';
+import { Link } from 'react-router-dom';
+import { StyledButton } from '../styles';
 
 const TopTracks = () => {
     const [topTracks, setTopTracks] = useState(null);
@@ -23,15 +25,21 @@ const TopTracks = () => {
         };
         catchErrors(fetchData());
     },[activeRange]);
+
     return(
-        <main>
-            <SectionWrapper title='🚀 Top Sons' breadcrumb={true}>
-                <RangeButton activeRange={activeRange} setActiveRange={setActiveRange}/>
-                {topTracks && topTracks.items && (<TrackList tracks={topTracks.items}/>)}
-            </SectionWrapper>
-            {topTracks && topTracks.items && (
-            <PlaylistGenButton items={topTracks.items} type={'tracks'} profile={profile} range={activeRange}/>)}
-        </main>
+        <>
+            <Link to="/">
+                <StyledButton>Home</StyledButton> 
+            </Link>
+            <main>
+                <SectionWrapper title='🚀 Top Sons' breadcrumb={true}>
+                    <RangeButton activeRange={activeRange} setActiveRange={setActiveRange}/>
+                    {topTracks && topTracks.items && (<TrackList tracks={topTracks.items}/>)}
+                </SectionWrapper>
+                {topTracks && topTracks.items && (
+                <PlaylistGenButton items={topTracks.items} type={'tracks'} profile={profile} range={activeRange}/>)}
+            </main>
+        </>
     )
 };
 

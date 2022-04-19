@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { getCurrentUserPlaylists } from "../scripts/user";
-import { SectionWrapper, PlaylistsGrid } from "../components";
-import { catchErrors } from '../utils'
+import { useState, useEffect } from 'react';
+import { getCurrentUserPlaylists } from '../scripts/user';
+import { SectionWrapper, PlaylistsGrid } from '../components';
+import { catchErrors } from '../utils';
+import { Link } from 'react-router-dom';
+import { StyledButton } from '../styles';
 
 const Playlists = () => {
     const [playlists, setPlaylists] = useState(null);
@@ -13,19 +15,25 @@ const Playlists = () => {
     useEffect(() => {
         const fetchData = async () => {
             const playslists = await getCurrentUserPlaylists();
-            setPlaylists(playslists)
+
+            setPlaylists(playslists);
         };
         catchErrors(fetchData());
     },[])
-    console.log(playlists)
+
     return (
-        <main>
-            <SectionWrapper title='Playlists' breadcrumb={true}>
-                {playlists && (
-                    <PlaylistsGrid playlists={playlists.items}/>
-                )}
-            </SectionWrapper>
-        </main>
+        <>
+            <Link to="/">
+                <StyledButton>Home</StyledButton> 
+            </Link>
+            <main>
+                <SectionWrapper title="Playlists" breadcrumb={true}>
+                    {playlists && (
+                        <PlaylistsGrid playlists={playlists.items}/>
+                    )}
+                </SectionWrapper>
+            </main>
+        </>
     )
 }
 

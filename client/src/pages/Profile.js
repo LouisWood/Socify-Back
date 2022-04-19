@@ -1,36 +1,10 @@
 import {useEffect, useState} from 'react';
-import {getCurrentUserProfile, 
-        getCurrentUserPlaylists, 
-        getCurrentUserTopArtists, 
-        getCurrentUserTopTracks,
-        } from '../scripts/user'
-import { getTracksAverageStats } from '../scripts/music'
-import {StyledHeader} from '../styles';
-import {SectionWrapper, 
-        ArtistGrid, 
-        TrackList, 
-        PlaylistsGrid,
-        StatGrid
-        } from '../components';
-import {Link} from "react-router-dom";
-import styled from 'styled-components/macro';
-import { catchErrors } from '../utils'
-
-const StyledChatButton = styled.p`
-  position: absolute;
-  top: var(--spacing-sm);
-  left: var(--spacing-md);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: rgba(0,0,0,.7);
-  color: var(--white);
-  font-size: var(--fsize-sm);
-  font-weight: 700;
-  border-radius: var(--border-radius-pill);
-  z-index: 10;
-  @media (min-width: 768px) {
-    left: var(--spacing-lg);
-  }
-`;
+import { getCurrentUserProfile, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks } from '../scripts/user';
+import { getTracksAverageStats } from '../scripts/music';
+import { StyledHeader, StyledButton } from '../styles';
+import {SectionWrapper, ArtistGrid, TrackList, PlaylistsGrid, StatGrid } from '../components';
+import {Link} from 'react-router-dom';
+import { catchErrors } from '../utils';
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -46,7 +20,6 @@ const Profile = () => {
         */
         const fetchData = async () => {
             const userProfile = await getCurrentUserProfile();
-            console.log(userProfile);
             setProfile(userProfile);
 
             const userPlaylists = await getCurrentUserPlaylists();
@@ -59,11 +32,10 @@ const Profile = () => {
             setTopTracks(userTopTracks);
 
             if (userTopTracks) {
-                const userStats = await getTracksAverageStats(userTopTracks.data.items);
+                const userStats = await getTracksAverageStats(userTopTracks.items);
                 setStats(userStats);
-            } else {
+            } else
                 setStats(null);
-            }
         };
         catchErrors(fetchData());
     }, []);
@@ -71,19 +43,19 @@ const Profile = () => {
     return (
         <>
             <Link to="/messages">
-                <StyledChatButton>Rooms</StyledChatButton> 
+                <StyledButton>Rooms</StyledButton> 
             </Link>
             {profile && (
                 <>
-                    <StyledHeader type='user'>
-                        <div className='header_inner'>
+                    <StyledHeader type="user">
+                        <div className="header_inner">
                             {profile.images.length && profile.images[0].url && (
-                                <img className='header_img' src={profile.images[0].url} alt='Avatar'/>
+                                <img className="header_img" src={profile.images[0].url} alt="Avatar"/>
                             )}
                             <div>
-                                <div className='header_overline'>Profil</div>
-                                <h1 className='header_name'>{profile.display_name}</h1>
-                                <p className='header_meta'>
+                                <div className="header_overline">Profil</div>
+                                <h1 className="header_name">{profile.display_name}</h1>
+                                <p className="header_meta">
                                     {playlists && (
                                         <span>
                                             {playlists.total} Playlist{playlists.total > 1 ? 's' : ''}
@@ -99,18 +71,18 @@ const Profile = () => {
                     {
                         topArtists && topTracks && (
                             <main>
-                                <SectionWrapper title='📊 Stats'>
+                                <SectionWrapper title="📊 Stats">
                                     <StatGrid stats={stats}/>
                                 </SectionWrapper>
-                                <SectionWrapper title='🔥 Artistes du mois' seeAllLink='/top-artists'>
+                                <SectionWrapper title="🔥 Artistes du mois" seeAllLink="/top-artists">
                                     <ArtistGrid artists={topArtists.items.slice(0, 5)}/>
                                 </SectionWrapper>
 
-                                <SectionWrapper title='🔥 Sons du mois' seeAllLink='/top-tracks'>
+                                <SectionWrapper title="🔥 Sons du mois" seeAllLink="/top-tracks">
                                     <TrackList tracks={topTracks.items.slice(0, 5)}/>
                                 </SectionWrapper>
 
-                                <SectionWrapper title='Playlists' seeAllLink='/playlists'>
+                                <SectionWrapper title="Playlists" seeAllLink="/playlists">
                                     <PlaylistsGrid playlists={playlists.items.slice(0,5)}/>
                                 </SectionWrapper>
 

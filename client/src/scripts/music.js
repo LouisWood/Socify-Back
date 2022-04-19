@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 axios.defaults.baseURL = 'http://localhost:8000'
+axios.defaults.withCredentials = true
 
 /**
  * Calculer la moyenne des éléments d'un tableau
@@ -22,11 +23,13 @@ export const getTracksAverageStats = async (tracks) => {
     for (const track of tracks) {
         const infoTrack = await getTracksInfo(track.id)
 
-        tabAcousticness.push(infoTrack.data.acousticness)
-        tabDanceability.push(infoTrack.data.danceability)
-        tabEnergy.push(infoTrack.data.energy)
-        tabInstrumentalness.push(infoTrack.data.instrumentalness)
-        tabValence.push(infoTrack.data.valence)
+        if (infoTrack) {
+            tabAcousticness.push(infoTrack.acousticness)
+            tabDanceability.push(infoTrack.danceability)
+            tabEnergy.push(infoTrack.energy)
+            tabInstrumentalness.push(infoTrack.instrumentalness)
+            tabValence.push(infoTrack.valence)
+        }
     }
 
     averageStats.set('Acoustique', average(tabAcousticness).toFixed(2) * 100 + '%')
@@ -38,23 +41,23 @@ export const getTracksAverageStats = async (tracks) => {
     return averageStats
 }
 
-export const getArtistTopTrack = async (artistID) => {
+export const getArtistTopTracks = async (artistID) => {
     const response = await axios.post('/artists/artistID/top-tracks', {
         artistID: artistID
     })
-    return 'data' in response ? response.data : null
+    return 'res' in response.data ? response.data.res : null
 }
 
 export const getTracksInfo = async (trackID) => {
     const response = await axios.post('/audio-features/trackID', {
         trackID: trackID
     })
-    return 'data' in response ? response.data : null
+    return 'res' in response.data ? response.data.res : null
 }
 
 export const getPlaylistByID = async (playlistID) => {
     const response = await axios.post('/playlists/playlistID', {
         playlistID: playlistID
     })
-    return 'data' in response ? response.data : null
+    return 'res' in response.data ? response.data.res : null
 }

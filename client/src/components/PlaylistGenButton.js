@@ -1,6 +1,6 @@
 import { StyledPlaylistGenContainer } from "../styles";
 import { setCurrentUserPlaylist, fillCurrentUserPlaylist } from '../scripts/user';
-import { getArtistTopTrack } from '../scripts/music'
+import { getArtistTopTracks } from '../scripts/music'
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -25,15 +25,17 @@ const PlaylistGenButton = ({items, type, profile, range}) => {
  */
 const GenereatePlaylistFromArtist = async (profile, items) => {
     let tracksUris = [];
-    let topTracks = [];
     let playlistName = `${profile.display_name} top artistes 🔥`;
     let playlistDesc = `Les 5 top sons des 20 artistes préferés de ${profile.display_name}`; 
 
     for (const item of items) {
-        topTracks = (await getArtistTopTrack(item.id)).data.tracks.slice(0, 5);
+        const tracks = await getArtistTopTracks(item.id);
+        if (tracks) {
+            const topTracks = tracks.tracks.slice(0, 5);
 
-        for (const topTrack of topTracks) 
-            tracksUris.push(topTrack.uri)
+            for (const topTrack of topTracks) 
+                tracksUris.push(topTrack.uri)
+        }
     }
 
     return {playlistName, playlistDesc, tracksUris}
@@ -92,9 +94,14 @@ const pushPlaylist = async (type, items, profile, range) => {
             break;
     }
 
-    const {data} = await setCurrentUserPlaylist(profile.id, playlistName, playlistDesc);
-    const {dataTracks} = await fillCurrentUserPlaylist(data.id, tracksUris);
-    toast("✨ Playlist générée ✨", {delay: 0, theme: "dark"});
+    const playlist = await setCurrentUserPlaylist(profile.id, playlistName, playlistDesc);
+    console.log(playlist);
+    if (playlist) {
+        const {dataTracks} = await fillCurrentUserPlaylist(playlist.id, tracksUris);
+        toast.success("✨ Playlist générée ✨", {delay: 0, theme: "dark"});
+    } else {
+        toast.error("Erreur lors de la génération", {delay: 0, theme: "dark"});
+    }
 }
 
 

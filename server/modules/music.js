@@ -1,9 +1,9 @@
 const axios = require('axios').default
 
-axios.defaults.baseURL = 'https://api.spotify.com/v1';
-axios.defaults.headers['Content-Type'] = 'application/json';
+axios.defaults.baseURL = 'https://api.spotify.com/v1'
+axios.defaults.headers['Content-Type'] = 'application/json'
 
-const getArtistTopTrack = async (access_token, artistID) => {
+const getArtistTopTracks = async (access_token, artistID) => {
     const response = await axios.get(
         `/artists/${artistID}/top-tracks?country=US`, {
         headers: {
@@ -12,12 +12,12 @@ const getArtistTopTrack = async (access_token, artistID) => {
     })
     .then(resMusic => {
         return {
-            data: resMusic.data
+            res: resMusic.data
         }
     })
-    .catch(() => {
+    .catch(err => {
         return {
-            error: 'error'
+            error: err
         }
     })
     
@@ -33,12 +33,12 @@ const getTracksInfo = async (access_token, trackID) => {
     })
     .then(resMusic => {
         return {
-            data: resMusic.data
+            res: resMusic.data
         }
     })
-    .catch(() => {
+    .catch(err => {
         return {
-            error: 'error'
+            error: err
         }
     })
     
@@ -54,16 +54,16 @@ const getPlaylistByID = async (access_token, playlistID) => {
     })
     .then(resMusic => {
         return {
-            data: resMusic.data
+            res: resMusic.data
         }
     })
-    .catch(() => {
+    .catch(err => {
         return {
-            error: 'error'
+            error: err
         }
     })
     
     return response
 }
 
-module.exports = { getArtistTopTrack, getTracksInfo, getPlaylistByID }
+module.exports = { getArtistTopTracks, getTracksInfo, getPlaylistByID }

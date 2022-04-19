@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { SectionWrapper, TrackList } from '../components';
 import { getPlaylistByID } from '../scripts/music';
-import { StyledHeader } from '../styles';
-import { catchErrors } from '../utils'
+import { StyledHeader, StyledButton } from '../styles';
+import { catchErrors } from '../utils';
+import { Link } from 'react-router-dom';
 
 const Playlist = () => {
     //https://reactrouter.com/docs/en/v6/api#useparams
@@ -17,24 +18,25 @@ const Playlist = () => {
             const playslist = await getPlaylistByID(id);
 
             setPlaylist(playslist);
-            setTracks(playslist);
             
             if (playslist)
                 setTracks(playslist.tracks.items);
+            else
+                setTracks(null);
         };
         catchErrors(fetchData());
     }, [id])
 
     const tracksOfTrackList = useMemo(() => {
-        if(!tracks)
-            return;
-        console.log(tracks)
-        return tracks.map(({track}) => track);
+        if (tracks)
+            return tracks.map(({track}) => track);
     }, [tracks])
-
-    console.log(playlist)
+    
     return (
         <>
+            <Link to="/">
+                <StyledButton>Home</StyledButton> 
+            </Link>
             {playlist && (
                 <>
                     <StyledHeader>
