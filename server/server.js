@@ -3,6 +3,12 @@ const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./module
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
 const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
 
+const corsOptions = {
+    origin:'http://localhost:3000',
+    credentials:true,
+    optionSuccessStatus:200
+}
+
 const express = require('express')
 const cors = require ('cors')
 const cookieParser = require('cookie-parser')
@@ -12,12 +18,8 @@ const { URLSearchParams } = require('url')
 require('dotenv').config()
 
 const app = express()
-
-const corsOptions = {
-    origin:'http://localhost:3000',
-    credentials:true,
-    optionSuccessStatus:200
-}
+const server = require('http').Server(app)
+const socketIo = require('socket.io')(server, corsOptions)
 
 app.use(cors(corsOptions));
 app.use(express.json())
@@ -221,7 +223,15 @@ app.get('*', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
-app.listen(8000, async () => {
+socketIo.on('connection', (socket) => {
+    console.log(`User ${socket.id} connected`)
+
+    socket.on('disconnect', (reason) => {
+        console.log(`User ${socket.id} disconnected`)
+    })
+})
+
+server.listen(8000, async () => {
     console.log('Listening on port 8000')
     await createDatabaseIfNotExist()
 })
