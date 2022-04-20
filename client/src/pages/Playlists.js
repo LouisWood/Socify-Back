@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentUserPlaylists } from '../scripts/user';
 import { SectionWrapper, PlaylistsGrid } from '../components';
 import { catchErrors } from '../utils';
-import { Link } from 'react-router-dom';
-import { StyledButton } from '../styles';
+import { StyledButton, StyledLogoutButton } from '../styles';
 
 const Playlists = () => {
     const [playlists, setPlaylists] = useState(null);
@@ -23,9 +22,8 @@ const Playlists = () => {
 
     return (
         <>
-            <Link to="/">
-                <StyledButton>Home</StyledButton> 
-            </Link>
+            <StyledButton href="/">Home</StyledButton>
+            <StyledLogoutButton href='http://localhost:8000/logout'>Se déconnecter</StyledLogoutButton>
             <main>
                 <SectionWrapper title="Playlists" breadcrumb={true}>
                     {playlists && (

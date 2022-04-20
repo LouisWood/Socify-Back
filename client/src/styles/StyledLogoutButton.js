@@ -1,9 +1,9 @@
 import styled from 'styled-components/macro';
 
-const StyledButton = styled.a`
+const StyledLogoutButton = styled.a`
     position: absolute;
     top: var(--spacing-sm);
-    left: var(--spacing-md);
+    right: var(--spacing-md);
     padding: var(--spacing-xs) var(--spacing-sm);
     background-color: rgba(0,0,0,.7);
     color: var(--white);
@@ -12,7 +12,7 @@ const StyledButton = styled.a`
     border-radius: var(--border-radius-pill);
     z-index: 10;
     @media (min-width: 768px) {
-        left: var(--spacing-lg);
+        right: var(--spacing-lg);
     }
     &:hover, &:focus {
         text-decoration: none;
@@ -21,4 +21,4 @@ const StyledButton = styled.a`
     }
 `;
 
-export default StyledButton
+export default StyledLogoutButton

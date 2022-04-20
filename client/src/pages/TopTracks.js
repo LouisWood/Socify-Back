@@ -3,8 +3,7 @@ import { getCurrentUserTopTracks, getCurrentUserProfile } from '../scripts/user'
 import { TrackList, SectionWrapper, RangeButton } from '../components';
 import { PlaylistGenButton } from '../components';
 import { catchErrors } from '../utils';
-import { Link } from 'react-router-dom';
-import { StyledButton } from '../styles';
+import { StyledButton, StyledLogoutButton } from '../styles';
 
 const TopTracks = () => {
     const [topTracks, setTopTracks] = useState(null);
@@ -28,9 +27,8 @@ const TopTracks = () => {
 
     return(
         <>
-            <Link to="/">
-                <StyledButton>Home</StyledButton> 
-            </Link>
+            <StyledButton href="/">Home</StyledButton>
+            <StyledLogoutButton href='http://localhost:8000/logout'>Se déconnecter</StyledLogoutButton>
             <main>
                 <SectionWrapper title='🚀 Top Sons' breadcrumb={true}>
                     <RangeButton activeRange={activeRange} setActiveRange={setActiveRange}/>

@@ -7,4 +7,4 @@ export {default as TopArtists} from './TopArtists';
 export {default as TopTracks} from './TopTracks';
 export {default as Playlists} from './Playlists';
 export {default as Playlist} from './Playlist';
-export {default as Messages} from './Messages';
+export {default as Dashboard} from './Dashboard';

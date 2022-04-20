@@ -2,9 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { SectionWrapper, TrackList } from '../components';
 import { getPlaylistByID } from '../scripts/music';
-import { StyledHeader, StyledButton } from '../styles';
+import { StyledHeader, StyledButton, StyledLogoutButton } from '../styles';
 import { catchErrors } from '../utils';
-import { Link } from 'react-router-dom';
 
 const Playlist = () => {
     //https://reactrouter.com/docs/en/v6/api#useparams
@@ -34,9 +33,8 @@ const Playlist = () => {
     
     return (
         <>
-            <Link to="/">
-                <StyledButton>Home</StyledButton> 
-            </Link>
+            <StyledButton href="/">Home</StyledButton>
+            <StyledLogoutButton href='http://localhost:8000/logout'>Se déconnecter</StyledLogoutButton>
             {playlist && (
                 <>
                     <StyledHeader>

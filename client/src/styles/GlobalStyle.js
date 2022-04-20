@@ -12,6 +12,8 @@ ${variables};
 
 html{
     box-sizing: border-box;
+    width: 100%;
+    height: 100%;
 }
 
 *, *:before, *:after {
@@ -22,6 +24,7 @@ body {
     margin: 0;
     padding: 0;
     width: 100%;
+    height: 100%;
     max-width: 100%;
     min-height: 100%;
     background-color: var(--black);

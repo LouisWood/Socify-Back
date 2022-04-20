@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { getCurrentUserTopArtists, getCurrentUserProfile } from '../scripts/user';
 import { ArtistGrid, SectionWrapper, RangeButton, PlaylistGenButton } from '../components';
 import { catchErrors } from '../utils';
-import { Link } from 'react-router-dom';
-import { StyledButton } from '../styles'
+import { StyledButton, StyledLogoutButton } from '../styles';
 
 const TopArtists = () => {
     const [topArtists, setTopArtists] = useState(null);
@@ -27,9 +26,8 @@ const TopArtists = () => {
 
     return (
         <>
-            <Link to="/">
-                <StyledButton>Home</StyledButton> 
-            </Link>
+            <StyledButton href="/">Home</StyledButton>
+            <StyledLogoutButton href='http://localhost:8000/logout'>Se déconnecter</StyledLogoutButton>
             <main>
                 <SectionWrapper title='🚀 Top Artistes' breadcrumb={true}>
                     <RangeButton activeRange={activeRange} setActiveRange={setActiveRange}/>

@@ -1,9 +1,8 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import { getCurrentUserProfile, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks } from '../scripts/user';
 import { getTracksAverageStats } from '../scripts/music';
-import { StyledHeader, StyledButton } from '../styles';
-import {SectionWrapper, ArtistGrid, TrackList, PlaylistsGrid, StatGrid } from '../components';
-import {Link} from 'react-router-dom';
+import { StyledHeader, StyledButton, StyledLogoutButton } from '../styles';
+import { SectionWrapper, ArtistGrid, TrackList, PlaylistsGrid, StatGrid } from '../components';
 import { catchErrors } from '../utils';
 
 const Profile = () => {
@@ -42,9 +41,8 @@ const Profile = () => {
 
     return (
         <>
-            <Link to="/messages">
-                <StyledButton>Rooms</StyledButton> 
-            </Link>
+            <StyledButton href="/dashboard">Rooms</StyledButton>
+            <StyledLogoutButton href="http://localhost:8000/logout">Se déconnecter</StyledLogoutButton>
             {profile && (
                 <>
                     <StyledHeader type="user">
@@ -85,8 +83,6 @@ const Profile = () => {
                                 <SectionWrapper title="Playlists" seeAllLink="/playlists">
                                     <PlaylistsGrid playlists={playlists.items.slice(0,5)}/>
                                 </SectionWrapper>
-
-
                             </main>
                         )
                     }

@@ -3,7 +3,7 @@
  * Attention a bien utiliser la convention PascalCase
  * https://techterms.com/definition/pascalcase
  */
-import styled from "styled-components/macro";
+import styled from 'styled-components/macro';
 
 /**
  * Pour centrer le bouton en utilisant Flexbox
@@ -43,6 +43,7 @@ const StyledLoginButton = styled.a`
   &:hover, &:focus {
     text-decoration: none;
     filter: brightness(1.1);
+    color: white;
   }
 `;
 
