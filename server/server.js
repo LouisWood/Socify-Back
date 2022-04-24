@@ -3,12 +3,6 @@ const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./module
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
 const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
 
-const corsOptions = {
-    origin:'http://localhost:3000',
-    credentials:true,
-    optionSuccessStatus:200
-}
-
 const express = require('express')
 const cors = require ('cors')
 const cookieParser = require('cookie-parser')
@@ -19,9 +13,19 @@ require('dotenv').config()
 
 const app = express()
 const server = require('http').Server(app)
-const socketIo = require('socket.io')(server, corsOptions)
+const io = require('socket.io')(server, {
+    cors: {
+        origin:'http://localhost:3000',
+        credentials:true,
+        method: ['GET', 'POST']
+    }
+})
 
-app.use(cors(corsOptions));
+app.use(cors({
+    origin:'http://localhost:3000',
+    credentials:true,
+    method: ['GET', 'POST']
+}))
 app.use(express.json())
 app.use(cookieParser(process.env.SECRET_KEY))
 app.use(cookieEncrypter(process.env.SECRET_KEY))
@@ -223,10 +227,27 @@ app.get('*', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
-socketIo.on('connection', (socket) => {
-    console.log(`User ${socket.id} connected`)
+io.on('connection', socket => {
+    socket.on('sendMessage', data => {
+        if (Array.from(socket.rooms).length > 0) {
+            const room = Array.from(socket.rooms).filter(item => item != socket.id)
+            console.log(room[0])
+            if (room.length === 1)
+                io.to(room[0]).emit('receiveMessage',  data.name + ' : ' + data.message)
+        }
+    })
 
-    socket.on('disconnect', (reason) => {
+    socket.on('joinRoom', msg => {
+        socket.join(msg[0])
+        io.to(msg[0]).emit('receiveMessage', msg[1] + ' a rejoint la discussion')
+    })
+
+    socket.on('leaveRoom', msg => {
+        socket.leave(msg[0])
+        io.to(msg[0]).emit('receiveMessage', msg[1] + ' a quitté la discussion')
+    })
+
+    socket.on('disconnect', () => {
         console.log(`User ${socket.id} disconnected`)
     })
 })
