@@ -3,7 +3,7 @@ import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
 import { getCurrentUserDiscussions } from '../scripts/chat'
 import '../styles/chat.css'
-import { ListGroup } from 'react-bootstrap'
+import { ListGroup, Navbar, Container, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
 import { io } from 'socket.io-client'
 
 const socket = io.connect('http://localhost:8000')
@@ -68,11 +68,11 @@ const Dashboard = () => {
         })
     }, [socket])
 
-    return (
-        <div style={{position: 'relative'}}>
+    /*
+        <div>
             {discussions && (
                 <>
-                    <ListGroup defaultActiveKey="0" onSelect={(key) => changeRoom(key)} style={{width: '10%', height: '100vh', backgroundColor: '#000', textAlign: 'center', right: '90%', left: '0', position: 'absolute'}}>
+                    <ListGroup defaultActiveKey="0" onSelect={(key) => changeRoom(key)} style={{height: '100vh', backgroundColor: '#000', textAlign: 'center', right: '90%', left: '0', position: 'absolute'}}>
                         {discussions.map((discussion, i) => (
                             <ListGroup.Item action eventKey={i} key={i} style={{borderRadius: '20px'}}>{discussion}</ListGroup.Item>
                         ))}
@@ -93,6 +93,65 @@ const Dashboard = () => {
                     </div>
                 </>
             )}
+        </div>
+    */
+
+    /*
+            <div style={{right: '0', left: '10%', position: 'absolute'}}>
+                <ul id="messages">
+                </ul>
+                <form id="form">
+                    <input type='text' placeholder='Salut'/><button onClick={(e) => sendMessage(e)}>Envoyer</button>
+                </form>
+            </div>
+    */
+
+    const discussionsListStyle = {
+        position: 'absolute',
+        top: '0',
+        bottom: '0',
+        left: '0',
+        right: '85%',
+        backgroundColor: '#272525',
+        textAlign: 'center',
+        borderRight: '1px solid #000'
+    }
+
+    const bodyStyle = {
+        position: 'absolute',
+        top: '0',
+        bottom: '0',
+        left: '15%',
+        right: '15%',
+        textAlign: 'center',
+        borderLeft: '1px solid #000',
+        borderRight: '1px solid #000'
+    }
+
+    const usersListStyle = {
+        position: 'absolute',
+        top: '0',
+        bottom: '0',
+        left: '85%',
+        right: '0',
+        backgroundColor: '#272525',
+        textAlign: 'center',
+        borderLeft: '1px solid #000'
+    }
+
+    return (
+        <div>
+            <ListGroup defaultActiveKey="0" style={discussionsListStyle}>
+                    <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+            </ListGroup>
+
+            <div style={bodyStyle}>
+
+            </div>
+
+            <ListGroup defaultActiveKey="0" style={usersListStyle}>
+                    <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+            </ListGroup>
         </div>
     )
 }
