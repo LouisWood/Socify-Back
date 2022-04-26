@@ -5,6 +5,7 @@ import { getCurrentUserDiscussions } from '../scripts/chat'
 import { ListGroup, Navbar, Container, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
 import { io } from 'socket.io-client'
 import logo from '../images/socifyLogo.png'
+import styled from "styled-components/macro"
 
 const socket = io.connect('http://localhost:8000')
 const Dashboard = () => {
@@ -106,34 +107,48 @@ const Dashboard = () => {
             </div>
     */
 
-    const homeStyle = {
-        display: 'flex',
-        position: 'absolute',
-        top: '0',
-        bottom: '90%',
-        left: '0',
-        right: '85%',
-        width: 'auto',
-        height: 'auto',
-        backgroundColor: '#272525',
-        textAlign: 'center',
-        borderRight: '1px solid #000',
-        borderRadius: '0'
-    }
 
-    const homeImgStyle = {
-        width: 'auto',
-        height: 'auto'
-    }
+    const HomeLogo = styled.div`
+        &  {
+            display: flex;  
+            position: absolute;
+            top: 0;
+            bottom: 90%;
+            left: 0;
+            right: 85%;
+            width: auto;
+            height: auto;
+            background-color: #272525;
+            text-align: center;
+            border-right: 1px solid #000;
+            border-radius: 0;
+        }
+        
+        &:after {
+            border-bottom: 2px solid #000;
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            width: 80%;
+            bottom: 0;
+            margin: 0 auto;
+        }
 
-    const homePStyle = {
-        width: 'auto',
-        height: 'auto',
-        marginTop: 'auto',
-        marginBottom: 'auto',
-        marginLeft: '5%',
-        fontSize: '2vw'
-    }
+        & > img {
+            width: auto;
+            height: auto;
+        }
+
+        & > p {
+            width: auto;
+            height: auto;
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: 5%;
+            font-size: 2vw;
+        }
+    `
 
     const discussionsListStyle = {
         position: 'absolute',
@@ -146,7 +161,8 @@ const Dashboard = () => {
         borderRight: '1px solid #000',
         borderRadius: '0',
         overflow: 'scroll',
-        overflowY: 'none'
+        overflowX: 'auto',
+        overflowY: 'auto'
     }
 
     const messageListStyle = {
@@ -206,18 +222,19 @@ const Dashboard = () => {
         borderLeft: '1px solid #000',
         borderRadius: '0',
         overflow: 'scroll',
-        overflowY: 'none'
+        overflowX: 'auto',
+        overflowY: 'auto'
     }
 
     return (
         <div>
-            <div style={homeStyle}>
-                <img src={logo} style={homeImgStyle}/>
-                <p style={homePStyle}>Socify</p>
-            </div>
+            <HomeLogo>
+                <img src={logo}/>
+                <p>Socify</p>
+            </HomeLogo>
 
             <ListGroup defaultActiveKey="0" style={discussionsListStyle}>
-                    <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+                <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
             </ListGroup>
 
             <div style={messageListStyle}>
@@ -233,7 +250,7 @@ const Dashboard = () => {
             </div>
 
             <ListGroup defaultActiveKey="0" style={usersListStyle}>
-                    <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+                <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
             </ListGroup>
         </div>
     )
