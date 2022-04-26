@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
 import { getCurrentUserDiscussions } from '../scripts/chat'
-import '../styles/chat.css'
 import { ListGroup, Navbar, Container, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
 import { io } from 'socket.io-client'
+import logo from '../images/socifyLogo.png'
 
 const socket = io.connect('http://localhost:8000')
 const Dashboard = () => {
@@ -106,26 +106,93 @@ const Dashboard = () => {
             </div>
     */
 
-    const discussionsListStyle = {
+    const homeStyle = {
+        display: 'flex',
         position: 'absolute',
         top: '0',
+        bottom: '90%',
+        left: '0',
+        right: '85%',
+        width: 'auto',
+        height: 'auto',
+        backgroundColor: '#272525',
+        textAlign: 'center',
+        borderRight: '1px solid #000',
+        borderRadius: '0'
+    }
+
+    const homeImgStyle = {
+        width: 'auto',
+        height: 'auto'
+    }
+
+    const homePStyle = {
+        width: 'auto',
+        height: 'auto',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        marginLeft: '5%',
+        fontSize: '2vw'
+    }
+
+    const discussionsListStyle = {
+        position: 'absolute',
+        top: '10%',
         bottom: '0',
         left: '0',
         right: '85%',
         backgroundColor: '#272525',
         textAlign: 'center',
-        borderRight: '1px solid #000'
+        borderRight: '1px solid #000',
+        borderRadius: '0',
+        overflow: 'scroll',
+        overflowY: 'none'
     }
 
-    const bodyStyle = {
+    const messageListStyle = {
         position: 'absolute',
         top: '0',
-        bottom: '0',
+        bottom: '5%',
         left: '15%',
         right: '15%',
         textAlign: 'center',
+        borderBottom: '1px solid #000',
         borderLeft: '1px solid #000',
         borderRight: '1px solid #000'
+    }
+
+    const sendMessageStyle = {
+        display: 'flex',
+        position: 'absolute',
+        top: '95%',
+        bottom: '0',
+        left: '15%',
+        right: '15%',
+        backgroundColor: '#444444',
+        textAlign: 'center',
+        borderTop: '1px solid #000',
+        borderLeft: '1px solid #000',
+        borderRight: '1px solid #000'
+    }
+
+    const sendMessageInputStyle = {
+        margin: 'auto',
+        marginRight: '5px',
+        width: '80%',
+        height: '60%',
+        backgroundColor: '#272525',
+        borderRadius: '5px',
+        border: '1px solid #000'
+    }
+
+    const sendMessageButtonStyle = {
+        margin: 'auto',
+        marginLeft: '5px',
+        width: '10%',
+        height: '60%',
+        lineHeight: '60%',
+        borderRadius: '5px',
+        border: '1px solid #000'
     }
 
     const usersListStyle = {
@@ -136,17 +203,33 @@ const Dashboard = () => {
         right: '0',
         backgroundColor: '#272525',
         textAlign: 'center',
-        borderLeft: '1px solid #000'
+        borderLeft: '1px solid #000',
+        borderRadius: '0',
+        overflow: 'scroll',
+        overflowY: 'none'
     }
 
     return (
         <div>
+            <div style={homeStyle}>
+                <img src={logo} style={homeImgStyle}/>
+                <p style={homePStyle}>Socify</p>
+            </div>
+
             <ListGroup defaultActiveKey="0" style={discussionsListStyle}>
                     <ListGroup.Item action eventKey="0" style={{borderRadius: '20px'}}>Test</ListGroup.Item>
             </ListGroup>
 
-            <div style={bodyStyle}>
+            <div style={messageListStyle}>
+                <lu>
+                    <li>Test</li>
+                    <li>Test</li>
+                </lu>
+            </div>
 
+            <div style={sendMessageStyle}>
+                <input type='text' placeholder='Tapez votre message ici' style={sendMessageInputStyle}/>
+                <button style={sendMessageButtonStyle}>Envoyer</button>
             </div>
 
             <ListGroup defaultActiveKey="0" style={usersListStyle}>

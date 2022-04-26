@@ -13,8 +13,8 @@ const createDatabaseIfNotExist = async () => {
     if (!dbExist) {
         await knex.schema.createTable('Users', function (table) {
             table.string('userID').primary().notNullable()
-            table.string('name')
-            table.string('picture')
+            table.string('name').notNullable()
+            table.string('picture').notNullable()
         })
         await knex.schema.createTable('Friends', function (table) {
             table.string('userID').notNullable()
@@ -25,6 +25,7 @@ const createDatabaseIfNotExist = async () => {
         })
         await knex.schema.createTable('Discussions', function (table) {
             table.increments('discussionID').primary()
+            table.string('picture').notNullable()
             table.string('category').notNullable()
         })
         await knex.schema.createTable('Messages', function (table) {
