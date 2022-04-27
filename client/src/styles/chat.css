@@ -1,0 +1,150 @@
+.homeLogo  {
+    display: flex;  
+    position: absolute;
+    top: 0;
+    bottom: 90%;
+    left: 0;
+    right: 85%;
+    width: auto;
+    height: auto;
+    background-color: #272525;
+    text-align: center;
+    border-right: 1px solid #000;
+    border-radius: 0;
+}
+    
+.homeLogo:after {
+    border-bottom: 2px solid #000;
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 80%;
+    bottom: 0;
+    margin: 0 auto;
+}
+
+.homeLogo img {
+    width: 50%;
+    height: auto;
+    max-width: 130px;
+    max-height: 130px;
+}
+
+.homeLogo p {
+    width: auto;
+    height: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 5%;
+    font-size: 2vw;
+}
+
+.discussionsList {
+    position: absolute;
+    top: 10%;
+    bottom: 0;
+    left: 0;
+    right: 85%;
+    background-color: #272525;
+    text-align: center;
+    border-right: 1px solid #000;
+    border-radius: 0 !important;
+    overflow: scroll;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 5px !important;
+}
+
+.discussionsListItem {
+    border: none !important;
+    display: flex !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: 100px !important;
+    border-radius: 30px !important;
+    background-color: rgba(255, 255, 255, 0) !important;
+}
+
+.discussionsListItem:focus {
+    background-color: #fff !important;
+}
+
+.discussionsListItemImg {
+    padding: 0;
+    width: 50%;
+    height: auto;
+    max-width: 70px;
+    max-height: 70px;
+}
+
+.discussionsListItemP {
+    width: 50%;
+    height: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 5%;
+    font-size: 1vw;
+    text-align: center;
+}
+
+.messageList {
+    position: absolute;
+    top: 0;
+    bottom: 5%;
+    left: 15%;
+    right: 15%;
+    text-align: center;
+    border-bottom: 1px solid #000;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+}
+
+.sendMessage {
+    display: flex;
+    position: absolute;
+    top: 95%;
+    bottom: 0;
+    left: 15%;
+    right: 15%;
+    background-color: #444444;
+    text-align: center;
+    border-top: 1px solid #000;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+}
+
+.sendMessageInput {
+    margin: auto;
+    margin-right: 5px;
+    width: 80%;
+    height: 60%;
+    background-color: #272525;
+    border-radius: 5px;
+    border: 1px solid #000;
+}
+
+.sendMessageButton {
+    margin: auto;
+    margin-left: 5px;
+    width: 10%;
+    height: 60%;
+    line-height: 60%;
+    border-radius: 5px;
+    border: 1px solid #000
+}
+
+.usersList {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 85%;
+    right: 0;
+    background-color: #272525;
+    text-align: center;
+    border-left: 1px solid #000;
+    border-radius: 0 !important;
+    overflow: scroll;
+    overflow-x: auto;
+    overflow-y: auto;
+}
