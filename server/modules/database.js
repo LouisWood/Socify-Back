@@ -42,6 +42,21 @@ const createDatabaseIfNotExist = async () => {
             table.foreign('userID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
+
+        await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee85d0390b295b07f8a52a101767', category: 'Moi'})
+        await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee855067db235dd3330fd32360a4', category: 'Raf'})
+
+        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', category: 'Musique 1', content: 'Bonjour'})
+        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', category: 'Musique 2', content: 'Bonjour'})
+
+        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', category: 'Musique 1', content: 'Bonjour'})
+        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', category: 'Musique 2', content: 'Bonjour'})
+
+        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1})
+        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2})
+
+        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1})
+        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2})
     }
 }
 
@@ -55,6 +70,8 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
     res.cookie('refresh_token', tokenData.refresh_token, {signed: true})
     res.cookie('expireTime', expireTime.toString(), {signed: true})
 
+    console.log(userData.id)
+
     const rows = await knex('Users').select('*').where('userID', '=', userData.id)
 
     if (rows.length !== 1) {
@@ -62,4 +79,40 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
     }
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase }
+const insertMessageInDiscussion = async (userID, category, content) => {
+    await knex.raw('INSERT INTO Messages (userID, category, content) VALUES (?, ?, ?)', userID, category, content)
+}
+
+const getDiscussionsByUserID = async (userID) => {
+    let response = [];
+    const rows = await knex.select('*').from('Participate').where('userID', '=', userID)
+
+    if (rows.length !== 1) {
+        for (let i = 0; i < rows.length; i++) {
+            const discussion = await knex.select('*').from('Discussions').where('discussionID', '=', rows[i].discussionID)
+            response.push(discussion[0])
+        }
+    }
+
+    return {
+        res: response
+    }
+}
+
+const getMessagesByUserIDAndDiscussionID = async (userID, discussionID) => {
+    let response = [];
+    const rows = await knex.select('*').from('Discussions').where('discussionID', '=', discussionID)
+
+    if (rows.length !== 1) {
+        for (let i = 0; i < rows.length; i++) {
+            const message = await knex.select('*').from('Messages').where('userID', '=', userID).where('category', '=', rows[i].category)
+            response.push(message)
+        }
+    }
+
+    return {
+        res: response
+    }
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getMessagesByUserIDAndDiscussionID }

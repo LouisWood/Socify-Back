@@ -1,9 +1,11 @@
-export const getCurrentUserDiscussions = async () => {
-    //const response = await axios.get('/discussions')
-    //return 'res' in response.data ? response.data.res : null
+import axios from 'axios'
 
-    return [
-        'test1',
-        'test2'
-    ]
+export const getCurrentUserDiscussions = async () => {
+    const response = await axios.get('/discussions')
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const getCurrentUserMessages = async () => {
+    const response = await axios.get('/messages')
+    return 'res' in response.data ? response.data.res : null
 }

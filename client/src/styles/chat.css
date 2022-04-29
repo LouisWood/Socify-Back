@@ -1,5 +1,5 @@
 .homeLogo  {
-    display: flex;  
+    display: flex;
     position: absolute;
     top: 0;
     bottom: 90%;
@@ -25,10 +25,11 @@
 }
 
 .homeLogo img {
+    left: 0;
+    right: 50%;
+    object-fit: contain;
     width: 50%;
     height: auto;
-    max-width: 130px;
-    max-height: 130px;
 }
 
 .homeLogo p {
@@ -36,7 +37,8 @@
     height: auto;
     margin-top: auto;
     margin-bottom: auto;
-    margin-left: 5%;
+    left: 50%;
+    right: 0;
     font-size: 2vw;
 }
 
@@ -46,52 +48,71 @@
     bottom: 0;
     left: 0;
     right: 85%;
+    width: 15%;
+    height: 90%;
+    padding: 5px;
+    list-style-type: none;
     background-color: #272525;
     text-align: center;
     border-right: 1px solid #000;
-    border-radius: 0 !important;
     overflow: scroll;
     overflow-x: auto;
     overflow-y: auto;
-    padding: 5px !important;
 }
 
-.discussionsListItem {
-    border: none !important;
-    display: flex !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    max-height: 100px !important;
-    border-radius: 30px !important;
-    background-color: rgba(255, 255, 255, 0) !important;
+.discussionsList li {
+    padding-bottom: 5px;
+    width: 100%;
+    height: 50px;
+    border-radius: 30px;
 }
 
-.discussionsListItem:focus {
-    background-color: #fff !important;
-}
-
-.discussionsListItemImg {
+.discussionsList button {
+    display: flex;
     padding: 0;
-    width: 50%;
-    height: auto;
-    max-width: 70px;
-    max-height: 70px;
+    width: 100%;
+    height: 100%;
 }
 
-.discussionsListItemP {
-    width: 50%;
-    height: auto;
+.discussionsList button:hover:not(.active) {
+    background-color: rgba(220, 220, 220, 0.3);
+}
+
+.discussionsList button.active:not(:hover) {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+.discussionsList button:hover.active {
+    background-color: rgba(155, 155, 155, 0.7);
+}
+
+.discussionsList img {
+    border-radius: 50%;
+    left: 0;
+    right: 50%;
     margin-top: auto;
     margin-bottom: auto;
     margin-left: 5%;
-    font-size: 1vw;
-    text-align: center;
+    object-fit: contain;
+    width: 20%;
+    height: 80%;
+}
+
+.discussionsList p {
+    left: 50%;
+    right: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-right: 5%;
+    width: 80%;
+    line-height: 50px;
+    font-size: 100%;
 }
 
 .messageList {
     position: absolute;
     top: 0;
-    bottom: 5%;
+    bottom: 6%;
     left: 15%;
     right: 15%;
     text-align: center;
@@ -103,7 +124,7 @@
 .sendMessage {
     display: flex;
     position: absolute;
-    top: 95%;
+    top: 94%;
     bottom: 0;
     left: 15%;
     right: 15%;
@@ -122,6 +143,7 @@
     background-color: #272525;
     border-radius: 5px;
     border: 1px solid #000;
+    color: white; 
 }
 
 .sendMessageButton {
@@ -143,7 +165,7 @@
     background-color: #272525;
     text-align: center;
     border-left: 1px solid #000;
-    border-radius: 0 !important;
+    border-radius: 0;
     overflow: scroll;
     overflow-x: auto;
     overflow-y: auto;

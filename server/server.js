@@ -1,7 +1,7 @@
-const { createDatabaseIfNotExist, insertUserInDatabase } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist } = require('./modules/user')
+const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserDiscussions } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
@@ -223,17 +223,32 @@ app.post('/playlists/playlistID', async (req, res) => {
     }
 })
 
+app.get('/discussions', async (req, res) => {
+    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+
+    if (userID) {
+        const response = await getCurrentUserDiscussions(userID)
+        
+        res.json(response)
+    } else {
+        res.json({
+            error: 'User not connected'
+        })
+    }
+})
+
 app.get('*', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
 io.on('connection', socket => {
-    socket.on('sendMessage', data => {
+    socket.on('sendMessage', async (data) => {
         if (Array.from(socket.rooms).length > 0) {
             const room = Array.from(socket.rooms).filter(item => item != socket.id)
-            console.log(room[0])
-            if (room.length === 1)
-                io.to(room[0]).emit('receiveMessage',  data.name + ' : ' + data.message)
+            if (room.length === 1) {
+                await insertMessageInDiscussion(data.userID, data.category, data.content)
+                io.to(room[0]).emit('receiveMessage',  data.name + ' : ' + data.content)
+            }
         }
     })
 

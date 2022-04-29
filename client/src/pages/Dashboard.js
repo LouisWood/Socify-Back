@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
-import { getCurrentUserDiscussions } from '../scripts/chat'
-import { ListGroup, Navbar, Container, Nav, NavDropdown, Form, FormControl, Button } from 'react-bootstrap'
+import { getCurrentUserDiscussions, getCurrentUserMessages } from '../scripts/chat'
+import { ListGroup } from 'react-bootstrap'
 import { io } from 'socket.io-client'
 import logo from '../images/socifyLogo.png'
-import styled from 'styled-components/macro'
+import logoAdd from '../images/socifyAdd.png'
 import '../styles/chat.css'
 
 const socket = io.connect('http://localhost:8000')
@@ -16,36 +16,14 @@ const Dashboard = () => {
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const userProfile = await getCurrentUserProfile()
-            setProfile(userProfile)
-
-            const discussions = await getCurrentUserDiscussions()
-            setDiscussions(discussions)
-
-            if (userProfile && discussions) {
-                socket.emit('joinRoom', ['0', userProfile.display_name])
-                setRoom('0')
-                setProfile(userProfile)
-            }
-        }
-        catchErrors(fetchData())
-
-        if (profile) {
-            socket.emit('sendMessage', [inputValue, profile.display_name])
-            setInputValue('')
-        }
-    }, [])
-
     const sendMessage = (e) => {
         e.preventDefault()
-        console.log(inputValue)
-        console.log(profile)
-        if (inputValue && profile) {
+
+        if (inputValue && profile && discussions) {
             socket.emit('sendMessage', {
-                message: inputValue,
-                name: profile.display_name
+                name: profile.display_name,
+                category: discussions[room].category,
+                content: inputValue
             })
             setInputValue('')
         }
@@ -63,6 +41,49 @@ const Dashboard = () => {
         }
     }
 
+    const changeDiscussion = (e, i) => {
+        if ('active' in e.target.parentElement.classList)
+            return
+        
+        document.querySelectorAll('ul.discussionsList button.active').forEach(function(item) {
+            item.classList.remove('active')
+        })
+
+        e.target.parentElement.classList.add('active')
+
+        changeRoom(i)
+    }
+
+    const addDiscussion = (e) => {
+        if ('active' in e.target.parentElement.classList)
+            return
+        
+        document.querySelectorAll('ul.discussionsList button.active').forEach(function(item) {
+            item.classList.remove('active')
+        })
+
+        e.target.parentElement.classList.add('active')
+    }
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const userProfile = await getCurrentUserProfile()
+            setProfile(userProfile)
+
+            const userDiscussions = await getCurrentUserDiscussions()
+            setDiscussions(userDiscussions)
+
+            const userMessages = await getCurrentUserMessages()
+            setDiscussions(userMessages)
+        }
+        catchErrors(fetchData())
+    }, [])
+
+    useEffect(() => {
+        if (profile && discussions && discussions.length > 0)
+            changeRoom(discussions[0].discussionID)
+    }, [profile, discussions])
+
     useEffect(() => {
         socket.on('receiveMessage', (msg) => {
             if (msg)
@@ -70,72 +91,70 @@ const Dashboard = () => {
         })
     }, [socket])
 
-    /*
-        <div>
-            {discussions && (
-                <>
-                    <ListGroup defaultActiveKey='0' onSelect={(key) => changeRoom(key)} style={{height: '100vh', backgroundColor: '#000', textAlign: 'center', right: '90%', left: '0', position: 'absolute'}}>
-                        {discussions.map((discussion, i) => (
-                            <ListGroup.Item action eventKey={i} key={i} style={{borderRadius: '20px'}}>{discussion}</ListGroup.Item>
-                        ))}
-                    </ListGroup>
-                    <div style={{right: '0', left: '10%', position: 'absolute'}}>
-                        <ul id='messages'>
-                            {messages && (
-                                <>
-                                    {messages.map((message, i) => (
-                                        <li key={i}>{message}</li>
-                                    ))}
-                                </>
-                            )}
-                        </ul>
-                        <form id='form'>
-                            <input id='input' value={inputValue} onChange={(e) => setInputValue(e.target.value)}/><button onClick={(e) => sendMessage(e)}>Envoyer</button>
-                        </form>
-                    </div>
-                </>
-            )}
-        </div>
-    */
-
-    /*
-            <div style={{right: '0', left: '10%', position: 'absolute'}}>
-                <ul id='messages'>
-                </ul>
-                <form id='form'>
-                    <input type='text' placeholder='Salut'/><button onClick={(e) => sendMessage(e)}>Envoyer</button>
-                </form>
-            </div>
-    */
-
     return (
         <div>
             <div className='homeLogo'>
-                <img src={logo}/>
+                <img src={logo} alt='logo'/>
                 <p>Socify</p>
             </div>
 
-            <ListGroup defaultActiveKey='0' className='discussionsList'>
-                <ListGroup.Item action eventKey='0' className='discussionsListItem'>
-                    <img src={logo} className='discussionsListItemImg'/>
-                    <p className='discussionsListItemP'>Socify</p>
-                </ListGroup.Item>
-            </ListGroup>
+            <ul className='discussionsList'>
+                {discussions && (
+                    <>
+                        {discussions.map((discussion, i) => {
+                            if (i === 0) {
+                                return (
+                                    <li key={discussion.discussionID}>
+                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className='active'>
+                                            <img src={discussion.picture} alt='logo'/>
+                                            <p>{discussion.category}</p>
+                                        </button>
+                                    </li>
+                                )
+                            }
+                            return (
+                                <li key={discussion.discussionID}>
+                                    <button onClick={(e) => changeDiscussion(e, discussion.discussionID)}>
+                                        <img src={discussion.picture} alt='logo'/>
+                                        <p>{discussion.category}</p>
+                                    </button>
+                                </li>
+                            )
+                        })}
+                    </>
+                )}
+                <li key={-1}>
+                    <button onClick={addDiscussion}>
+                        <img src={logoAdd} alt='logo'/>
+                        <p>Ajouter</p>
+                    </button>
+                </li>
+            </ul>
 
             <div className='messageList'>
-                <lu style={{listStyleType: 'none', margin: '0', padding: '0', textAlign: 'left'}}>
-                    <li>Test</li>
-                    <li>Test</li>
-                </lu>
+                <ul style={{listStyleType: 'none', margin: '0', padding: '0', textAlign: 'left'}}>
+                    {messages && (
+                        <>
+                            {messages.map((message, i) => (
+                                <li key={i}>
+                                    <ul>
+                                        {message}
+                                    </ul>
+                                </li>
+                            ))}
+                        </>
+                    )}
+                </ul>
             </div>
 
             <div className='sendMessage'>
-                <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput'/>
-                <button className='sendMessageButton'>Envoyer</button>
+                <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput' value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}/>
+                <button className='sendMessageButton' onClick={sendMessage}>Envoyer</button>
             </div>
 
             <ListGroup defaultActiveKey='0' className='usersList'>
                 <ListGroup.Item action eventKey='0' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+                <ListGroup.Item action eventKey='1' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
             </ListGroup>
         </div>
     )

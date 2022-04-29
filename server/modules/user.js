@@ -1,3 +1,5 @@
+const { getDiscussionsByUserID, getMessagesByUserIDAndDiscussionID } = require('./database')
+
 const axios = require('axios').default
 
 axios.defaults.baseURL = 'https://api.spotify.com/v1'
@@ -142,4 +144,12 @@ const fillCurrentUserPlaylist = async (access_token, playlistID, tracksUris) => 
     return response
 }
 
-module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist }
+const getCurrentUserDiscussions = async (userID) => {
+    return await getDiscussionsByUserID(userID)
+}
+
+const getCurrentUserMessages = async (userID) => {
+    return await getMessagesByUserIDAndDiscussionID(userID)
+}
+
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserDiscussions, getCurrentUserMessages }
