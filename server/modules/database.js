@@ -70,8 +70,6 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
     res.cookie('refresh_token', tokenData.refresh_token, {signed: true})
     res.cookie('expireTime', expireTime.toString(), {signed: true})
 
-    console.log(userData.id)
-
     const rows = await knex('Users').select('*').where('userID', '=', userData.id)
 
     if (rows.length !== 1) {

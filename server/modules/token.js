@@ -33,12 +33,12 @@ const refreshToken = async (refresh_token, res) => {
     })
     .then(resToken => {
         const currentTime = new Date()
-        const expireTime = new Date(currentTime.getTime() + 40 * 60 * 1000)
+        const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
 
         res.clearCookie('access_token')
         res.clearCookie('expireTime')
 
-        res.cookie('access_token', resToken.access_token, {signed: true})
+        res.cookie('access_token', resToken.data.access_token, {signed: true})
         res.cookie('expireTime', expireTime.toString(), {signed: true})
         
         return false
