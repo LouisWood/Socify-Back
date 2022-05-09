@@ -94,8 +94,10 @@
     margin-bottom: auto;
     margin-left: 5%;
     object-fit: contain;
-    width: 20%;
-    height: 80%;
+    width: auto;
+    height: auto;
+    max-width: 20%;
+    max-height: 88%;
 }
 
 .discussionsList p {

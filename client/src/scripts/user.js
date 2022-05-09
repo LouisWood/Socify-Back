@@ -4,22 +4,22 @@ axios.defaults.baseURL = 'http://localhost:8000'
 axios.defaults.withCredentials = true
 
 export const getCurrentUserProfile = async () => {
-    const response = await axios.post('/me')
+    const response = await axios.get('/me')
     return 'res' in response.data ? response.data.res : null
 }
 
 export const getCurrentUserPlaylists = async () => {
-    const response = await axios.post('/me/playlists')
+    const response = await axios.get('/me/playlists')
     return 'res' in response.data ? response.data.res : null
 }
 
 export const getCurrentUserTopArtists = async () => {
-    const response = await axios.post('/me/top/artists')
+    const response = await axios.get('/me/top/artists')
     return 'res' in response.data ? response.data.res : null
 }
 
 export const getCurrentUserTopTracks = async () => {
-    const response = await axios.post('/me/top/tracks')
+    const response = await axios.get('/me/top/tracks')
     return 'res' in response.data ? response.data.res : null
 }
 

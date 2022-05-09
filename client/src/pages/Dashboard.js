@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
-import { getCurrentUserDiscussions, getCurrentUserMessages } from '../scripts/chat'
+import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserMessages, setCurrentUserLastDiscussion } from '../scripts/chat'
 import { ListGroup } from 'react-bootstrap'
 import { io } from 'socket.io-client'
 import logo from '../images/socifyLogo.png'
 import logoAdd from '../images/socifyAdd.png'
 import '../styles/chat.css'
 
-const socket = io.connect('http://localhost:8000')
+const socket = io.connect('http://localhost:8000', {withCredentials: true})
 const Dashboard = () => {
     const [profile, setProfile] = useState(null)
     const [discussions, setDiscussions] = useState(null)
+    const [currentDiscussion, setCurrentDiscussion] = useState(-1)
     const [room, setRoom] = useState(null)
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
@@ -22,7 +23,7 @@ const Dashboard = () => {
         if (inputValue && profile && discussions) {
             socket.emit('sendMessage', {
                 name: profile.display_name,
-                category: discussions[room].category,
+                discussion: discussions[room].name,
                 content: inputValue
             })
             setInputValue('')
@@ -31,17 +32,21 @@ const Dashboard = () => {
     
     const changeRoom = (newRoom) => {
         if (room) {
-            socket.emit('leaveRoom', [room, profile.display_name])
+            socket.emit('leaveRoom', {
+                room: room
+            })
             setMessages([])
         }
         
         if (profile) {
-            socket.emit('joinRoom', [newRoom, profile.display_name])
+            socket.emit('joinRoom', {
+                room: newRoom
+            })
             setRoom(newRoom)
         }
     }
 
-    const changeDiscussion = (e, i) => {
+    const changeDiscussion = async (e, discussionID) => {
         if ('active' in e.target.parentElement.classList)
             return
         
@@ -50,11 +55,13 @@ const Dashboard = () => {
         })
 
         e.target.parentElement.classList.add('active')
-
-        changeRoom(i)
+        
+        await setCurrentUserLastDiscussion(discussionID)
+        setCurrentDiscussion(discussionID)
+        changeRoom(discussionID)
     }
 
-    const addDiscussion = (e) => {
+    const addDiscussion = async e => {
         if ('active' in e.target.parentElement.classList)
             return
         
@@ -63,6 +70,9 @@ const Dashboard = () => {
         })
 
         e.target.parentElement.classList.add('active')
+
+        await setCurrentUserLastDiscussion(-1)
+        setCurrentDiscussion(-1)
     }
 
     useEffect(() => {
@@ -70,11 +80,16 @@ const Dashboard = () => {
             const userProfile = await getCurrentUserProfile()
             setProfile(userProfile)
 
+            const userLastDiscussion = await getCurrentUserLastDiscussion()
+            setCurrentDiscussion(userLastDiscussion.lastDiscussion)
+
             const userDiscussions = await getCurrentUserDiscussions()
             setDiscussions(userDiscussions)
 
-            const userMessages = await getCurrentUserMessages()
-            setDiscussions(userMessages)
+            if (userLastDiscussion !== -1) {
+                const userMessages = await getCurrentUserMessages(userLastDiscussion)
+                setMessages(userMessages)
+            }
         }
         catchErrors(fetchData())
     }, [])
@@ -101,30 +116,35 @@ const Dashboard = () => {
             <ul className='discussionsList'>
                 {discussions && (
                     <>
-                        {discussions.map((discussion, i) => {
-                            if (i === 0) {
-                                return (
+                        { discussions.friends.length > 0 && (
+                            <>
+                                {discussions.friends.map(discussion => (
                                     <li key={discussion.discussionID}>
-                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className='active'>
+                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className={discussion.discussionID === currentDiscussion ? 'active' : ''}>
                                             <img src={discussion.picture} alt='logo'/>
-                                            <p>{discussion.category}</p>
+                                            <p>{discussion.name}</p>
                                         </button>
                                     </li>
-                                )
-                            }
-                            return (
-                                <li key={discussion.discussionID}>
-                                    <button onClick={(e) => changeDiscussion(e, discussion.discussionID)}>
-                                        <img src={discussion.picture} alt='logo'/>
-                                        <p>{discussion.category}</p>
-                                    </button>
-                                </li>
-                            )
-                        })}
+                                ))}
+                            </>
+                        )}
+                        { discussions.discussions.length > 0 && (
+                            <>
+                                {discussions.discussions.map(discussion => (
+                                    <li key={discussion.discussionID}>
+                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className={discussion.discussionID === currentDiscussion ? 'active' : ''}>
+                                            <img src={discussion.picture} alt='logo'/>
+                                            <p>{discussion.name}</p>
+                                        </button>
+                                    </li>
+                                ))}
+                            </>
+                        )}
                     </>
                 )}
+                
                 <li key={-1}>
-                    <button onClick={addDiscussion}>
+                    <button onClick={addDiscussion} className={currentDiscussion === -1 ? 'active' : ''}>
                         <img src={logoAdd} alt='logo'/>
                         <p>Ajouter</p>
                     </button>

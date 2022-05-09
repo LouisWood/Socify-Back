@@ -2,6 +2,34 @@ const cookieParser = require('cookie-parser')
 const axios = require('axios').default
 require('dotenv').config()
 
+const getAccessToken = async (code) => {
+    const response = await axios({
+        method: 'post',
+        url: 'https://accounts.spotify.com/api/token',
+        params: {
+            code: code,
+            redirect_uri: encodeURI(process.env.REDIRECT_URI),
+            grant_type: 'authorization_code'
+        },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: 'Basic ' + Buffer.from(process.env.CLIENT_ID + ':' + process.env.CLIENT_SECRET, 'utf-8').toString('base64')
+        }
+    })
+    .then(resToken => {
+        return {
+            res: resToken.data
+        }
+    })
+    .catch(err => {
+        return {
+            error: err
+        }
+    })
+
+    return response
+}
+
 const checkIfTokenIsExpired = async (req, res) => {
     const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
     const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
@@ -63,32 +91,4 @@ const deleteAndRedirect = (res) => {
     res.redirect('http://localhost:3000/')
 }
 
-const getAccessToken = async (code) => {
-    const response = await axios({
-        method: 'post',
-        url: 'https://accounts.spotify.com/api/token',
-        params: {
-            code: code,
-            redirect_uri: encodeURI(process.env.REDIRECT_URI),
-            grant_type: 'authorization_code'
-        },
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: 'Basic ' + Buffer.from(process.env.CLIENT_ID + ':' + process.env.CLIENT_SECRET, 'utf-8').toString('base64')
-        }
-    })
-    .then(resToken => {
-        return {
-            res: resToken.data
-        }
-    })
-    .catch(err => {
-        return {
-            error: err
-        }
-    })
-
-    return response
-}
-
-module.exports = { checkIfTokenIsExpired, refreshToken, deleteAndRedirect, getAccessToken }
+module.exports = { getAccessToken, checkIfTokenIsExpired, refreshToken, deleteAndRedirect }

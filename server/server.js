@@ -1,13 +1,14 @@
 const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserDiscussions } = require('./modules/user')
+const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserMessages, setCurrentUserLastDiscussion } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
 const cookieParser = require('cookie-parser')
 const cookieEncrypter = require('cookie-encrypter')
 const { URLSearchParams } = require('url')
+const cookie = require('cookie');
 
 require('dotenv').config()
 
@@ -15,15 +16,15 @@ const app = express()
 const server = require('http').Server(app)
 const io = require('socket.io')(server, {
     cors: {
-        origin:'http://localhost:3000',
-        credentials:true,
+        origin: 'http://localhost:3000',
+        credentials: true,
         method: ['GET', 'POST']
     }
 })
 
 app.use(cors({
-    origin:'http://localhost:3000',
-    credentials:true,
+    origin: 'http://localhost:3000',
+    credentials: true,
     method: ['GET', 'POST']
 }))
 app.use(express.json())
@@ -86,7 +87,7 @@ app.get('/callback', async (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
-app.post('/me', async (req, res) => {
+app.get('/me', async (req, res) => {
     const exit = await checkIfTokenIsExpired(req, res)
     if (exit)
         return
@@ -97,7 +98,7 @@ app.post('/me', async (req, res) => {
     res.json(response)
 })
 
-app.post('/me/playlists', async (req, res) => {
+app.get('/me/playlists', async (req, res) => {
     const exit = await checkIfTokenIsExpired(req, res)
     if (exit)
         return
@@ -108,7 +109,7 @@ app.post('/me/playlists', async (req, res) => {
     res.json(response)
 })
 
-app.post('/me/top/artists', async (req, res) => {
+app.get('/me/top/artists', async (req, res) => {
     const exit = await checkIfTokenIsExpired(req, res)
     if (exit)
         return
@@ -119,7 +120,7 @@ app.post('/me/top/artists', async (req, res) => {
     res.json(response)
 })
 
-app.post('/me/top/tracks', async (req, res) => {
+app.get('/me/top/tracks', async (req, res) => {
     const exit = await checkIfTokenIsExpired(req, res)
     if (exit)
         return
@@ -223,6 +224,20 @@ app.post('/playlists/playlistID', async (req, res) => {
     }
 })
 
+app.get('/lastDiscussion', async (req, res) => {
+    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+
+    if (userID) {
+        const response = await getCurrentUserLastDiscussion(userID)
+        
+        res.json(response)
+    } else {
+        res.json({
+            error: 'User not connected'
+        })
+    }
+})
+
 app.get('/discussions', async (req, res) => {
     const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
 
@@ -237,33 +252,63 @@ app.get('/discussions', async (req, res) => {
     }
 })
 
+app.post('/messages', async (req, res) => {
+    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+
+    if (userID && 'discussionID' in req.body) {
+        const discussionID = req.body.discussionID
+
+        const response = await getCurrentUserMessages(userID, discussionID)
+        
+        res.json(response)
+    } else {
+        res.json({
+            error: 'User not connected'
+        })
+    }
+})
+
+app.post('/lastDiscussion', async (req, res) => {
+    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+
+    if (userID && 'discussionID' in req.body) {
+        const playlistID = req.body.discussionID
+
+        await setCurrentUserLastDiscussion(userID, playlistID)
+        
+        res.json({
+            res: 'done'
+        })
+    } else {
+        res.json({
+            error: 'User not connected'
+        })
+    }
+})
+
 app.get('*', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
 io.on('connection', socket => {
-    socket.on('sendMessage', async (data) => {
+    socket.on('sendMessage', async data => {
         if (Array.from(socket.rooms).length > 0) {
             const room = Array.from(socket.rooms).filter(item => item != socket.id)
-            if (room.length === 1) {
-                await insertMessageInDiscussion(data.userID, data.category, data.content)
-                io.to(room[0]).emit('receiveMessage',  data.name + ' : ' + data.content)
+            if (room.length >= data.room) {
+                await insertMessageInDiscussion(data.userID, data.discussion, data.content)
+                io.to(room[data.room]).emit('receiveMessage',  data.name + ' : ' + data.content)
             }
         }
     })
 
-    socket.on('joinRoom', msg => {
-        socket.join(msg[0])
-        io.to(msg[0]).emit('receiveMessage', msg[1] + ' a rejoint la discussion')
+    socket.on('joinRoom', data => {
+        socket.join(data.room)
+        io.to(data.room).emit('receiveMessage', data.name + ' a rejoint la discussion')
     })
 
-    socket.on('leaveRoom', msg => {
-        socket.leave(msg[0])
-        io.to(msg[0]).emit('receiveMessage', msg[1] + ' a quitté la discussion')
-    })
-
-    socket.on('disconnect', () => {
-        console.log(`User ${socket.id} disconnected`)
+    socket.on('leaveRoom', data => {
+        socket.leave(data.room)
+        io.to(data.room).emit('receiveMessage', data.name + ' a quitté la discussion')
     })
 })
 

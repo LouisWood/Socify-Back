@@ -1,4 +1,4 @@
-const { getDiscussionsByUserID, getMessagesByUserIDAndDiscussionID } = require('./database')
+const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByUserIDAndDiscussionID, setLastDiscussionByUserID } = require('./database')
 
 const axios = require('axios').default
 
@@ -144,12 +144,20 @@ const fillCurrentUserPlaylist = async (access_token, playlistID, tracksUris) => 
     return response
 }
 
-const getCurrentUserDiscussions = async (userID) => {
+const getCurrentUserLastDiscussion = async userID => {
+    return await getLastDiscussionByUserID(userID)
+}
+
+const getCurrentUserDiscussions = async userID => {
     return await getDiscussionsByUserID(userID)
 }
 
-const getCurrentUserMessages = async (userID) => {
-    return await getMessagesByUserIDAndDiscussionID(userID)
+const getCurrentUserMessages = async (userID, discussionID) => {
+    return await getMessagesByUserIDAndDiscussionID(userID, discussionID)
 }
 
-module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserDiscussions, getCurrentUserMessages }
+const setCurrentUserLastDiscussion = async userID => {
+    return await setLastDiscussionByUserID(userID)
+}
+
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserMessages, setCurrentUserLastDiscussion }
