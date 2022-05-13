@@ -1,67 +1,47 @@
 import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
-import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserMessages, setCurrentUserLastDiscussion } from '../scripts/chat'
+import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, setCurrentUserLastDiscussion } from '../scripts/chat'
 import { ListGroup } from 'react-bootstrap'
-import { io } from 'socket.io-client'
+import { io } from "socket.io-client"
+import { useLocalStorage } from '../hook/localStorage'
 import logo from '../images/socifyLogo.png'
 import logoAdd from '../images/socifyAdd.png'
+import socifyDefault from '../images/socifyDefault.png'
 import '../styles/chat.css'
 
-const socket = io.connect('http://localhost:8000', {withCredentials: true})
+const socket = io('http://localhost:8000', {withCredentials: true})
+
 const Dashboard = () => {
     const [profile, setProfile] = useState(null)
     const [discussions, setDiscussions] = useState(null)
     const [currentDiscussion, setCurrentDiscussion] = useState(-1)
-    const [room, setRoom] = useState(null)
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
+    const [scrollPosition, setScrollPosition] = useLocalStorage('scrollPosition', -1)
 
-    const sendMessage = (e) => {
+    const handleScroll = e => {
+        let element = e.target
+        if (element.scrollHeight - element.scrollTop === element.clientHeight)
+            setScrollPosition(-1)
+        else
+            setScrollPosition(element.scrollTop)
+    }
+
+    const sendMessage = e => {
         e.preventDefault()
 
         if (inputValue && profile && discussions) {
             socket.emit('sendMessage', {
                 name: profile.display_name,
-                discussion: discussions[room].name,
+                discussionID: currentDiscussion,
                 content: inputValue
             })
             setInputValue('')
         }
     }
-    
-    const changeRoom = (newRoom) => {
-        if (room) {
-            socket.emit('leaveRoom', {
-                room: room
-            })
-            setMessages([])
-        }
-        
-        if (profile) {
-            socket.emit('joinRoom', {
-                room: newRoom
-            })
-            setRoom(newRoom)
-        }
-    }
 
-    const changeDiscussion = async (e, discussionID) => {
-        if ('active' in e.target.parentElement.classList)
-            return
-        
-        document.querySelectorAll('ul.discussionsList button.active').forEach(function(item) {
-            item.classList.remove('active')
-        })
-
-        e.target.parentElement.classList.add('active')
-        
-        await setCurrentUserLastDiscussion(discussionID)
-        setCurrentDiscussion(discussionID)
-        changeRoom(discussionID)
-    }
-
-    const addDiscussion = async e => {
+    const changeDiscussion = async (e, i) => {
         if ('active' in e.target.parentElement.classList)
             return
         
@@ -71,8 +51,11 @@ const Dashboard = () => {
 
         e.target.parentElement.classList.add('active')
 
-        await setCurrentUserLastDiscussion(-1)
-        setCurrentDiscussion(-1)
+        const index = i === -1 ? -1 : discussions[i].discussionID
+        
+        await setCurrentUserLastDiscussion(index)
+        setCurrentDiscussion(index)
+        setMessages(i === -1 ? [] : await getCurrentUserDiscussionMessages(index))
     }
 
     useEffect(() => {
@@ -81,30 +64,50 @@ const Dashboard = () => {
             setProfile(userProfile)
 
             const userLastDiscussion = await getCurrentUserLastDiscussion()
-            setCurrentDiscussion(userLastDiscussion.lastDiscussion)
+            setCurrentDiscussion(userLastDiscussion)
 
             const userDiscussions = await getCurrentUserDiscussions()
             setDiscussions(userDiscussions)
 
             if (userLastDiscussion !== -1) {
-                const userMessages = await getCurrentUserMessages(userLastDiscussion)
+                const userMessages = await getCurrentUserDiscussionMessages(userLastDiscussion)
                 setMessages(userMessages)
+            }
+
+            if (userDiscussions.length > 0) {
+                socket.emit('initDiscussions')
             }
         }
         catchErrors(fetchData())
     }, [])
 
     useEffect(() => {
-        if (profile && discussions && discussions.length > 0)
-            changeRoom(discussions[0].discussionID)
-    }, [profile, discussions])
+        socket.on('receiveMessage', data => {
+            if (currentDiscussion === data.discussionID) {
+                setMessages((messages) => [...messages, data])
+            } else {
 
-    useEffect(() => {
-        socket.on('receiveMessage', (msg) => {
-            if (msg)
-                setMessages((messages) => [...messages, msg])
+            }
         })
-    }, [socket])
+    }, [socket, currentDiscussion])
+
+    const ScrollToBottom = () => {
+        useEffect(() => {
+            const element = document.getElementById('test')
+            element.scrollTop = element.scrollHeight
+        })
+        return <></>
+    }
+
+    const ScrollToPosition = () => {
+        useEffect(() => {
+            const element = document.getElementById('test')
+            element.scrollTop = scrollPosition
+        })
+        return <></>
+    }
+
+    console.log(scrollPosition)
 
     return (
         <div>
@@ -116,24 +119,12 @@ const Dashboard = () => {
             <ul className='discussionsList'>
                 {discussions && (
                     <>
-                        { discussions.friends.length > 0 && (
+                        { discussions.length > 0 && (
                             <>
-                                {discussions.friends.map(discussion => (
+                                {discussions.map((discussion, i) => (
                                     <li key={discussion.discussionID}>
-                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className={discussion.discussionID === currentDiscussion ? 'active' : ''}>
-                                            <img src={discussion.picture} alt='logo'/>
-                                            <p>{discussion.name}</p>
-                                        </button>
-                                    </li>
-                                ))}
-                            </>
-                        )}
-                        { discussions.discussions.length > 0 && (
-                            <>
-                                {discussions.discussions.map(discussion => (
-                                    <li key={discussion.discussionID}>
-                                        <button onClick={(e) => changeDiscussion(e, discussion.discussionID)} className={discussion.discussionID === currentDiscussion ? 'active' : ''}>
-                                            <img src={discussion.picture} alt='logo'/>
+                                        <button onClick={e => changeDiscussion(e, i)} className={discussion.discussionID === currentDiscussion ? 'active' : ''}>
+                                            <img src={discussion.picture === '' ? socifyDefault : discussion.picture} alt='avatar'/>
                                             <p>{discussion.name}</p>
                                         </button>
                                     </li>
@@ -144,24 +135,28 @@ const Dashboard = () => {
                 )}
                 
                 <li key={-1}>
-                    <button onClick={addDiscussion} className={currentDiscussion === -1 ? 'active' : ''}>
-                        <img src={logoAdd} alt='logo'/>
+                    <button onClick={e => changeDiscussion(e, -1)} className={currentDiscussion === -1 ? 'active' : ''}>
+                        <img src={logoAdd} alt='avatar'/>
                         <p>Ajouter</p>
                     </button>
                 </li>
             </ul>
 
-            <div className='messageList'>
-                <ul style={{listStyleType: 'none', margin: '0', padding: '0', textAlign: 'left'}}>
+            <div className='messageList' onScroll={handleScroll} id='test'>
+                <ul>
                     {messages && (
                         <>
                             {messages.map((message, i) => (
                                 <li key={i}>
                                     <ul>
-                                        {message}
+                                        <img src={message.picture === '' ? socifyDefault : message.picture} alt='avatar' className='picture'/>
+                                        <p className='name'>{message.name}</p>
+                                        <p className='date'>{message.date}</p>
+                                        <p className='content'>{message.content}</p>
                                     </ul>
                                 </li>
                             ))}
+                            {scrollPosition === -1 ? <ScrollToBottom/> : <ScrollToPosition/>}
                         </>
                     )}
                 </ul>

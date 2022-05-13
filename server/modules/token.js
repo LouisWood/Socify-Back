@@ -31,9 +31,9 @@ const getAccessToken = async (code) => {
 }
 
 const checkIfTokenIsExpired = async (req, res) => {
-    const access_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY) : null
-    const refresh_token = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['refresh_token'], process.env.SECRET_KEY) : null
-    const expireTime = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['expireTime'], process.env.SECRET_KEY) : null
+    const access_token = req.signedCookies ? req.signedCookies.access_token : null
+    const refresh_token = req.signedCookies ? req.signedCookies.refresh_token : null
+    const expireTime = req.signedCookies ? req.signedCookies.expireTime : null
 
     if (access_token && refresh_token && expireTime) {
         if ((new Date()).getTime() >= Date.parse(expireTime))

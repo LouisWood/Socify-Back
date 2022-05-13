@@ -1,5 +1,8 @@
 const fs = require('fs')
+const { parseDate } = require('./common')
+
 require('dotenv').config()
+
 const dbExist = fs.existsSync(process.env.DB_PATH)
 const knex = require('knex')({
     client: 'sqlite3',
@@ -32,12 +35,12 @@ const createDatabaseIfNotExist = async () => {
         })
         await knex.schema.createTable('Messages', function (table) {
             table.increments('messageID').primary()
+            table.string('discussionID').notNullable()
             table.string('userID').notNullable()
-            table.string('discussion').notNullable()
             table.string('content').notNullable()
             table.string('date').notNullable()
+            table.foreign('discussionID').references('Discussions.discussionID')
             table.foreign('userID').references('Users.userID')
-            table.foreign('discussion').references('Discussions.name')
         })
         await knex.schema.createTable('Participate', function (table) {
             table.string('userID').notNullable()
@@ -49,11 +52,11 @@ const createDatabaseIfNotExist = async () => {
         await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee85d0390b295b07f8a52a101767', name: 'Moi', type: false})
         await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee855067db235dd3330fd32360a4', name: 'Raf', type: true})
 
-        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussion: 'Moi', content: 'Bonjour', date: new Date()})
-        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussion: 'Raf', content: 'Bonjour', date: new Date()})
+        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
+        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
 
-        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussion: 'Moi', content: 'Bonjour', date: new Date()})
-        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussion: 'Raf', content: 'Bonjour', date: new Date()})
+        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
+        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
 
         await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1})
         await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2})
@@ -80,21 +83,28 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
     }
 }
 
-const insertMessageInDiscussion = async (userID, discussion, content) => {
-    await knex.raw('INSERT INTO Messages (userID, discussion, content) VALUES (?, ?, ?)', userID, discussion, content)
+const insertMessageInDiscussion = async (discussionID, userID, content) => {
+    let message = {date: (new Date()).toString()}
+    const user = await knex.select('*').from('Users').where('userID', '=', userID)
+
+    await knex.raw('INSERT INTO Messages (discussionID, userID, content, date) VALUES (?, ?, ?, ?)', [discussionID, userID, content, message.date])
+
+    message.date = parseDate(message.date)
+    message.name = user[0].name
+    message.picture = user[0].picture
+
+    return message
 }
 
 const getLastDiscussionByUserID = async userID => {
     let lastDiscussion = -1;
     const rows = await knex.select('*').from('Users').where('userID', '=', userID)
 
-    if (rows.length !== 1)
+    if (rows.length === 1)
         lastDiscussion = rows[0].lastDiscussion
     
     return {
-        res: {
-            lastDiscussion: lastDiscussion
-        }
+        res: lastDiscussion
     }
 }
 
@@ -109,26 +119,24 @@ const getDiscussionsByUserID = async userID => {
             if (discussion[0].type)
                 discussions.push(discussion[0])
             else
-                friends.push(discussion[0])
+                friends.unshift(discussion[0])
         }
     }
 
     return {
-        res: {
-            friends: friends,
-            discussions: discussions
-        }
+        res: friends.concat(discussions)
     }
 }
 
-const getMessagesByUserIDAndDiscussionID = async (userID, discussionID) => {
-    let messages = [];
-    const rows = await knex.select('*').from('Discussions').where('discussionID', '=', discussionID)
-
-    if (rows.length !== 1) {
-        for (const row of rows) {
-            const message = await knex.select('*').from('Messages').where('userID', '=', userID).where('discussion', '=', row.name)
-            messages.push(message)
+const getMessagesByDiscussionID = async discussionID => {
+    let messages = await knex.select('*').from('Messages').where('discussionID', '=', discussionID)
+    
+    if (messages.length > 0) {
+        for (const message of messages) {
+            const user = await knex.select('*').from('Users').where('userID', '=', message.userID)
+            message.date = parseDate(message.date)
+            message.name = user[0].name
+            message.picture = user[0].picture
         }
     }
 
@@ -138,7 +146,7 @@ const getMessagesByUserIDAndDiscussionID = async (userID, discussionID) => {
 }
 
 const setLastDiscussionByUserID = async (userID, lastDiscussion) => {
-    await knex.raw('UPDATE Users SET lastDiscussion = ? WHERE userID = ?', lastDiscussion, userID)
+    await knex.raw('UPDATE Users SET lastDiscussion = ? WHERE userID = ?', [lastDiscussion, userID])
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByUserIDAndDiscussionID, setLastDiscussionByUserID }
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, setLastDiscussionByUserID }

@@ -4,6 +4,7 @@ import { getTracksAverageStats } from '../scripts/music';
 import { StyledHeader, StyledButton, StyledLogoutButton } from '../styles';
 import { SectionWrapper, ArtistGrid, TrackList, PlaylistsGrid, StatGrid } from '../components';
 import { catchErrors } from '../utils';
+import socifyDefault from '../images/socifyDefault.png'
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -47,8 +48,8 @@ const Profile = () => {
                 <>
                     <StyledHeader type="user">
                         <div className="header_inner">
-                            {profile.images.length && profile.images[0].url && (
-                                <img className="header_img" src={profile.images[0].url} alt="Avatar"/>
+                            {profile.images && (
+                                <img className="header_img" src={profile.images.length === 0 ? socifyDefault : profile.images[0].url} alt="Avatar"/>
                             )}
                             <div>
                                 <div className="header_overline">Profil</div>

@@ -1,14 +1,13 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserMessages, setCurrentUserLastDiscussion } = require('./modules/user')
+const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, setUserLastDiscussion } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
 const cookieParser = require('cookie-parser')
-const cookieEncrypter = require('cookie-encrypter')
+const { encryptCookieNodeMiddleware, decryptCookieSocketMiddleware } = require('encrypt-cookie')
 const { URLSearchParams } = require('url')
-const cookie = require('cookie');
 
 require('dotenv').config()
 
@@ -28,17 +27,17 @@ app.use(cors({
     method: ['GET', 'POST']
 }))
 app.use(express.json())
-app.use(cookieParser(process.env.SECRET_KEY))
-app.use(cookieEncrypter(process.env.SECRET_KEY))
+app.use(cookieParser(process.env.SIGNATURE_SECRET))
+app.use(encryptCookieNodeMiddleware(process.env.ENCRYPTION_SECRET))
 
 app.get('/', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
 app.get('/login', (req, res) => {
-    const storedID = req.signedCookies ? req.signedCookies['userID'] : null
+    const userID = req.signedCookies ? req.signedCookies['userID'] : null
     
-    if (storedID) {
+    if (userID) {
         res.redirect('http://localhost:3000/')
         return
     }
@@ -60,9 +59,9 @@ app.get('/login', (req, res) => {
 })
 
 app.get('/callback', async (req, res) => {
-    const storedID = req.signedCookies ? req.signedCookies['userID'] : null
+    const userID = req.signedCookies ? req.signedCookies['userID'] : null
 
-    if (storedID) {
+    if (userID) {
         res.redirect('http://localhost:3000/')
         return
     }
@@ -70,7 +69,7 @@ app.get('/callback', async (req, res) => {
     const code = req.query.code
     const state = req.query.state
     const error = req.query.error
-    const storedState = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['state'], process.env.SECRET_KEY) : null
+    const storedState = req.signedCookies ? req.signedCookies.state : null
     
     if (!error || state === storedState) {
         res.clearCookie('state')
@@ -92,7 +91,7 @@ app.get('/me', async (req, res) => {
     if (exit)
         return
     
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const access_token = req.signedCookies.access_token
     const response = await getUserInfo(access_token)
     
     res.json(response)
@@ -103,7 +102,7 @@ app.get('/me/playlists', async (req, res) => {
     if (exit)
         return
 
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const access_token = req.signedCookies.access_token
     const response = await getCurrentUserPlaylists(access_token)
     
     res.json(response)
@@ -114,7 +113,7 @@ app.get('/me/top/artists', async (req, res) => {
     if (exit)
         return
 
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const access_token = req.signedCookies.access_token
     const response = await getCurrentUserTopArtists(access_token)
     
     res.json(response)
@@ -125,7 +124,7 @@ app.get('/me/top/tracks', async (req, res) => {
     if (exit)
         return
 
-    const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+    const access_token = req.signedCookies.access_token
     const response = await getCurrentUserTopTracks(access_token)
     
     res.json(response)
@@ -137,8 +136,8 @@ app.post('/users/me/playlists', async (req, res) => {
         return
     
     if (req.signedCookies['userID'] && 'playlistName' in req.body && 'playlistDesc' in req.body) {
-        const userID = cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY)
-        const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+        const userID = req.signedCookies.userID
+        const access_token = req.signedCookies.access_token
         const playlistName = req.body.playlistName
         const playlistDesc = req.body.playlistDesc
         const response = await setCurrentUserPlaylist(userID, access_token, playlistName, playlistDesc)
@@ -146,7 +145,7 @@ app.post('/users/me/playlists', async (req, res) => {
         res.json(response)
     } else {
         res.json({
-            error: 'error'
+            error: 'Error'
         })
     }
 })
@@ -157,7 +156,7 @@ app.post('/playlists/playlistID/tracks', async (req, res) => {
         return
     
     if ('playlistID' in req.body && 'tracksUris' in req.body) {
-        const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+        const access_token = req.signedCookies.access_token
         const playlistID = req.body.playlistID
         const tracksUris = req.body.tracksUris
         const response = await fillCurrentUserPlaylist(access_token, playlistID, tracksUris)
@@ -165,7 +164,7 @@ app.post('/playlists/playlistID/tracks', async (req, res) => {
         res.json(response)
     } else {
         res.json({
-            error: 'error'
+            error: 'Error'
         })
     }
 })
@@ -176,14 +175,14 @@ app.post('/artists/artistID/top-tracks', async (req, res) => {
         return
     
     if ('artistID' in req.body) {
-        const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+        const access_token = req.signedCookies.access_token
         const artistID = req.body.artistID
         const response = await getArtistTopTracks(access_token, artistID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'error'
+            error: 'Error'
         })
     }
 })
@@ -194,14 +193,14 @@ app.post('/audio-features/trackID', async (req, res) => {
         return
     
     if ('trackID' in req.body) {
-        const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+        const access_token = req.signedCookies.access_token
         const trackID = req.body.trackID
         const response = await getTracksInfo(access_token, trackID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'error'
+            error: 'Error'
         })
     }
 })
@@ -212,76 +211,74 @@ app.post('/playlists/playlistID', async (req, res) => {
         return
     
     if ('playlistID' in req.body) {
-        const access_token = cookieParser.signedCookie(req.signedCookies['access_token'], process.env.SECRET_KEY)
+        const access_token = req.signedCookies.access_token
         const playlistID = req.body.playlistID
         const response = await getPlaylistByID(access_token, playlistID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'error'
+            error: 'Error'
         })
     }
 })
 
 app.get('/lastDiscussion', async (req, res) => {
-    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+    const userID = req.signedCookies ? req.signedCookies.userID : null
 
     if (userID) {
-        const response = await getCurrentUserLastDiscussion(userID)
+        const response = await getUserLastDiscussion(userID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'User not connected'
+            error: 'Error'
         })
     }
 })
 
 app.get('/discussions', async (req, res) => {
-    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+    const userID = req.signedCookies ? req.signedCookies.userID : null
 
     if (userID) {
-        const response = await getCurrentUserDiscussions(userID)
+        const response = await getUserDiscussions(userID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'User not connected'
+            error: 'Error'
         })
     }
 })
 
 app.post('/messages', async (req, res) => {
-    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
-
-    if (userID && 'discussionID' in req.body) {
+    if ('discussionID' in req.body) {
         const discussionID = req.body.discussionID
 
-        const response = await getCurrentUserMessages(userID, discussionID)
+        const response = await getUserDiscussionMessages(discussionID)
         
         res.json(response)
     } else {
         res.json({
-            error: 'User not connected'
+            error: 'Error'
         })
     }
 })
 
 app.post('/lastDiscussion', async (req, res) => {
-    const userID = req.signedCookies ? cookieParser.signedCookie(req.signedCookies['userID'], process.env.SECRET_KEY) : null
+    const userID = req.signedCookies ? req.signedCookies.userID : null
 
     if (userID && 'discussionID' in req.body) {
         const playlistID = req.body.discussionID
 
-        await setCurrentUserLastDiscussion(userID, playlistID)
+        await setUserLastDiscussion(userID, playlistID)
         
         res.json({
-            res: 'done'
+            res: 'Done'
         })
     } else {
         res.json({
-            error: 'User not connected'
+            error: 'Error'
         })
     }
 })
@@ -290,23 +287,38 @@ app.get('*', (req, res) => {
     res.redirect('http://localhost:3000/')
 })
 
-io.on('connection', socket => {
-    socket.on('sendMessage', async data => {
-        if (Array.from(socket.rooms).length > 0) {
-            const room = Array.from(socket.rooms).filter(item => item != socket.id)
-            if (room.length >= data.room) {
-                await insertMessageInDiscussion(data.userID, data.discussion, data.content)
-                io.to(room[data.room]).emit('receiveMessage',  data.name + ' : ' + data.content)
+io.use(decryptCookieSocketMiddleware(process.env.SIGNATURE_SECRET, process.env.ENCRYPTION_SECRET))
+
+io.on('connection', async socket => {
+    if (socket.handshake.signedCookies && 'userID' in socket.handshake.signedCookies)
+        socket.userID = socket.handshake.signedCookies.userID
+
+    socket.on('initDiscussions', async () => {
+        const discussions = await getDiscussionsByUserID(socket.userID)
+
+        if (discussions.res.length > 0) {
+            for (const discussion of discussions.res) {
+                socket.join(discussion.discussionID)
             }
         }
     })
 
-    socket.on('joinRoom', data => {
+    socket.on('sendMessage', async data => {
+        const message = await insertMessageInDiscussion(data.discussionID, socket.userID, data.content)
+
+        message.discussionID = data.discussionID
+        message.userID = socket.userID
+        message.content = data.content
+
+        io.to(data.discussionID).emit('receiveMessage', message)
+    })
+
+    socket.on('addDiscussion', data => {
         socket.join(data.room)
         io.to(data.room).emit('receiveMessage', data.name + ' a rejoint la discussion')
     })
 
-    socket.on('leaveRoom', data => {
+    socket.on('removeDiscussion', data => {
         socket.leave(data.room)
         io.to(data.room).emit('receiveMessage', data.name + ' a quitté la discussion')
     })
