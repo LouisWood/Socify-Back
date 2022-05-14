@@ -1,3 +1,5 @@
+@import url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css);
+
 ::-webkit-scrollbar {
     width: 10px;
 }
@@ -190,8 +192,10 @@
 
 .messagesList .content {
     display: block;
-    margin-top: -1.2%;
+    margin-top: -2%;
     margin-left: 6%;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.6vw;
 }
 
 .sendMessage {
@@ -282,4 +286,121 @@
     margin-left: 5%;
     vertical-align: top;
     font-size: 0.8vw;
+}
+
+.createDiscussion {
+    position: absolute;
+    top: 2%;
+    bottom: 88%;
+    left: 16%;
+    right: 69%;
+    width: 15%;
+    height: 4%;
+    line-height: 10%;
+    font-size: 0.7vw;
+}
+
+.trendDiscussion {
+    position: absolute;
+    top: 8%;
+    bottom: 2%;
+    left: 16%;
+    right: 79%;
+    width: 15%;
+    height: 90%;
+}
+
+.trendDiscussion .title {
+    margin-top: 5%;
+    font-size: 1vw;
+    text-align: center;
+    font-weight: bold;
+}
+
+.trendDiscussion .title:after {
+    border-bottom: 2px solid rgb(135, 135, 135);
+    content: "";
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    top: 5.5%;
+    width: 90%;
+}
+
+.exploreDiscussion {
+    position: absolute;
+    top: 2%;
+    bottom: 88%;
+    left: 45%;
+    right: 15%;
+    width: 40%;
+    height: 96%;
+}
+
+.exploreDiscussion .title {
+    margin-top: 1.4%;
+    text-align: center;
+    line-height: 100%;
+    font-size: 1vw;
+    font-weight: bold;
+}
+
+.exploreDiscussion .titleDescription {
+    margin-top: 1.4%;
+    text-align: center;
+    line-height: 100%;
+    font-size: 0.8vw;
+}
+
+.exploreDiscussion .titleDescription:after {
+    border-bottom: 2px solid rgb(135, 135, 135);
+    content: "";
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 7%;
+    width: 80%;
+}
+
+.searchDiscussion {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 7.6%;
+    width: 76%;
+    height: 100%;
+}
+
+.searchDiscussion .searchInput {
+    left: 0;
+    right: 8%;
+    width: 92%;
+    height: 3%;
+    border-radius: 0;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.searchDiscussion .searchInput:hover {
+    background-color: #e3e3e3;
+}
+
+.searchDiscussion .searchInput:hover::placeholder {
+    color: rgb(44, 44, 44);
+}
+
+.searchDiscussion .searchButton {
+    left: 92%;
+    right: 0;
+    width: 8%;
+    height: 3%;
+    border-radius: 0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    background-color: #000000;
+    border: 1px solid rgba(101, 101, 101, 0.5)
+}
+
+.searchDiscussion .searchButton:hover {
+    background-color: #272727;
 }

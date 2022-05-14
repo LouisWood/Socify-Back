@@ -13,6 +13,8 @@ const parseDate = dateToParse => {
     const hours = date.getHours()
     const minutes = date.getMinutes()
 
+    const monthString = month < 10 ? `0${month}` : month.toString()
+    const dayString = day < 10 ? `0${day}` : day.toString()
     const hoursString = hours < 10 ? `0${hours}` : hours.toString()
     const minutesString = minutes < 10 ? `0${minutes}` : minutes.toString()
 
@@ -21,7 +23,7 @@ const parseDate = dateToParse => {
     else if (year === currentYear && month === currentMonth && (day + 1) === currentDay)
         parsedDate = `Hier à ${hoursString}:${minutesString}`
     else
-        parsedDate = `${day}/${month}/${year}`
+        parsedDate = `${dayString}/${monthString}/${year}`
 
     return parsedDate
 }

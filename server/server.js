@@ -1,7 +1,7 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
-const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, setUserLastDiscussion } = require('./modules/user')
+const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion, setUserDiscussionScrollPosition } = require('./modules/user')
 
 const express = require('express')
 const cors = require ('cors')
@@ -251,6 +251,22 @@ app.get('/discussions', async (req, res) => {
     }
 })
 
+app.post('/lastScrollPosition', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'discussionID' in req.body) {
+        const discussionID = req.body.discussionID
+
+        const response = await getUserDiscussionScrollPosition(userID, discussionID)
+        
+        res.json(response)
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
 app.post('/messages', async (req, res) => {
     if ('discussionID' in req.body) {
         const discussionID = req.body.discussionID
@@ -284,12 +300,69 @@ app.post('/lastDiscussion', async (req, res) => {
     const userID = req.signedCookies ? req.signedCookies.userID : null
 
     if (userID && 'discussionID' in req.body) {
-        const playlistID = req.body.discussionID
+        const lastDiscussion = req.body.lastDiscussion
 
-        await setUserLastDiscussion(userID, playlistID)
+        await setUserLastDiscussion(userID, lastDiscussion)
         
         res.json({
             res: 'Done'
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/scrollPosition', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'discussionID' in req.body && 'scrollPosition' in req.body) {
+        const discussionID = req.body.discussionID
+        const scrollPosition = req.body.scrollPosition
+
+        await setUserDiscussionScrollPosition(userID, discussionID, scrollPosition)
+        
+        res.json({
+            res: 'Done'
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/search', async (req, res) => {
+    if ('name' in req.body) {
+        const name = req.body.name
+
+        const users = await getUsersFromName(name)
+        const discussions = await getDiscussionsFromName(name)
+
+        if (users.length > 0)
+            users.sort((user1, user2) => user1.name - user2.name)
+
+        if (discussions.length > 0) {
+            discussions.sort((user1, user2) => user1.name - user2.name)
+            for (const discussion of discussions) {
+                let connectUsers = []
+                const sockets = await io.to(discussion.discussionID).fetchSockets()
+                
+                for (const socket of sockets)
+                    if (connectUsers.indexOf(socket.userID) === -1)
+                        connectUsers.push(socket.userID)
+
+                discussion.online = connectUsers.length
+                discussion.members = await getDiscussionNumberOfParticipant(discussion.discussionID)
+            }
+        }
+        
+        res.json({
+            res: {
+                users: users,
+                discussions: discussions
+            }
         })
     } else {
         res.json({

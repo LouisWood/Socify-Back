@@ -1,4 +1,4 @@
-const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsers, setLastDiscussionByUserID } = require('./database')
+const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID } = require('./database')
 
 const axios = require('axios').default
 
@@ -165,7 +165,7 @@ const getDiscussionUsersStatus = async (discussionID, sockets) => {
     }
 
     const connectedUsersUnique = [...new Set(connectedUsersAll)]
-    const discussionUsers = await getDiscussionUsers(discussionID)
+    const discussionUsers = await getDiscussionUsersByUserID(discussionID)
 
     discussionUsers.sort((user1, user2) => user1.name - user2.name)
 
@@ -184,8 +184,16 @@ const getDiscussionUsersStatus = async (discussionID, sockets) => {
     }
 }
 
-const setUserLastDiscussion = async (userID, discussionID) => {
-    return await setLastDiscussionByUserID(userID, discussionID)
+const getUserDiscussionScrollPosition = async (userID, lastDiscussion) => {
+    return await getDiscussionScrollPositionByUserIDAndByDiscussionID(userID, lastDiscussion)
 }
 
-module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, setUserLastDiscussion }
+const setUserLastDiscussion = async (userID, lastDiscussion) => {
+    await setLastDiscussionByUserID(userID, lastDiscussion)
+}
+
+const setUserDiscussionScrollPosition = async (userID, discussionID, scrollPosition) => {
+    await setDiscussionScrollPositionByUserIDAndByDiscussionID(userID, discussionID, scrollPosition)
+}
+
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion, setUserDiscussionScrollPosition }

@@ -23,9 +23,11 @@ const createDatabaseIfNotExist = async () => {
         await knex.schema.createTable('Friends', function (table) {
             table.string('userID').notNullable()
             table.string('friendID').notNullable()
+            table.string('discussionID').notNullable()
             table.primary(['userID', 'friendID'])
             table.foreign('userID').references('Users.userID')
             table.foreign('friendID').references('Users.userID')
+            table.foreign('discussionID').references('Discussions.discussionID')
         })
         await knex.schema.createTable('Discussions', function (table) {
             table.increments('discussionID').primary()
@@ -45,7 +47,7 @@ const createDatabaseIfNotExist = async () => {
         await knex.schema.createTable('Participate', function (table) {
             table.string('userID').notNullable()
             table.integer('discussionID').notNullable()
-            //table.integer('scrollPosition').notNullable() To do
+            table.integer('scrollPosition').notNullable()
             table.foreign('userID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
@@ -59,11 +61,11 @@ const createDatabaseIfNotExist = async () => {
         await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
         await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
 
-        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1})
-        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2})
+        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1, scrollPosition: -1})
+        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2, scrollPosition: -1})
 
-        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1})
-        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2})
+        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1, scrollPosition: -1})
+        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2, scrollPosition: -1})
     }
 }
 
@@ -146,7 +148,7 @@ const getMessagesByDiscussionID = async discussionID => {
     }
 }
 
-const getDiscussionUsers = async discussionID => {
+const getDiscussionUsersByUserID = async discussionID => {
     let response = [];
     const participants = await knex.select('userID').from('Participate').where('discussionID', '=', discussionID)
 
@@ -160,8 +162,38 @@ const getDiscussionUsers = async discussionID => {
     return response
 }
 
+const getDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, discussionID) => {
+    let scrollPosition = -1;
+    const participant = await knex.select('scrollPosition').from('Participate').where('userID', '=', userID).where('discussionID', '=', discussionID)
+
+    if (participant.length > 0) {
+        scrollPosition = participant[0].scrollPosition
+    }
+
+    return {
+        res: scrollPosition
+    }
+}
+
+const getUsersFromName = async name => {
+    return await knex.raw('SELECT userID, name, picture FROM Users WHERE name LIKE ?', [`%${name}%`])
+}
+
+const getDiscussionsFromName = async name => {
+    return await knex.raw('SELECT discussionID, picture, name FROM Discussions WHERE type = true AND name LIKE ?', [`%${name}%`])
+}
+
+const getDiscussionNumberOfParticipant = async discussionID => {
+    const discussions = await knex.raw('SELECT userID FROM Participate WHERE discussionID = ?', [discussionID])
+    return discussions.length
+}
+
 const setLastDiscussionByUserID = async (userID, lastDiscussion) => {
     await knex.raw('UPDATE Users SET lastDiscussion = ? WHERE userID = ?', [lastDiscussion, userID])
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsers, setLastDiscussionByUserID }
+const setDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, discussionID, scrollPosition) => {
+    await knex.raw('UPDATE Participate SET scrollPosition = ? WHERE userID = ? AND discussionID = ?', [scrollPosition, userID, discussionID])
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID }

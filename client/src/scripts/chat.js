@@ -24,8 +24,29 @@ export const getDiscussionUsersStatus = async discussionID => {
     return 'res' in response.data ? response.data.res : null
 }
 
-export const setCurrentUserLastDiscussion = async discussionID => {
-    await axios.post('/lastDiscussion', {
-        discussionID: discussionID
+export const getCurrentUserDiscussionScrollPosition = async discussionID => {
+    const response = await axios.post('/lastScrollPosition', {
+        discussionID: discussionID,
     })
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const setCurrentUserLastDiscussion = async lastDiscussion => {
+    await axios.post('/lastDiscussion', {
+        lastDiscussion: lastDiscussion
+    })
+}
+
+export const setCurrentUserDiscussionScrollPosition = async (discussionID, scrollPosition) => {
+    await axios.post('/scrollPosition', {
+        discussionID: discussionID,
+        scrollPosition: scrollPosition
+    })
+}
+
+export const searchUsersAndDiscussions = async name => {
+    const response = await axios.post('/search', {
+        name: name
+    })
+    return 'res' in response.data ? response.data.res : null
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
-import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, getDiscussionUsersStatus, setCurrentUserLastDiscussion } from '../scripts/chat'
-import { io } from "socket.io-client"
+import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, getDiscussionUsersStatus, getCurrentUserDiscussionScrollPosition, setCurrentUserLastDiscussion, setCurrentUserDiscussionScrollPosition,searchUsersAndDiscussions } from '../scripts/chat'
+import { io } from 'socket.io-client'
 import { useLocalStorage } from '../hook/localStorage'
 import logo from '../images/socifyLogo.png'
 import logoAdd from '../images/socifyAdd.png'
@@ -15,30 +15,40 @@ const Dashboard = () => {
     const [profile, setProfile] = useState(null)
     const [discussions, setDiscussions] = useState(null)
     const [currentDiscussion, setCurrentDiscussion] = useState(-1)
-    const [messages, setMessages] = useState([])
-    const [inputValue, setInputValue] = useState('')
+    const [messages, setMessages] = useState(null)
+    const [inputValueMessage, setInputValueMessage] = useState('')
     const [scrollPosition, setScrollPosition] = useLocalStorage('scrollPosition', -1)
-    const [users, setUsers] = useState([])
+    const [users, setUsers] = useState(null)
+    const [inputValueSearch, setInputValueSearch] = useState('')
+    const [searchResponse, setSearchResponse] = useState(null)
 
     const handleScroll = e => {
         let element = e.target
-        if (element.scrollHeight - element.scrollTop === element.clientHeight)
+        if (element.scrollHeight - element.scrollTop === element.clientHeight || element.scrollHeight > element.clientHeight)
             setScrollPosition(-1)
         else
             setScrollPosition(element.scrollTop)
     }
 
     const sendMessage = e => {
-        console.log('test')
         e.preventDefault()
 
-        if (inputValue && profile && discussions) {
+        if (inputValueMessage && profile) {
             socket.emit('sendMessage', {
                 name: profile.display_name,
                 discussionID: currentDiscussion,
-                content: inputValue
+                content: inputValueMessage
             })
-            setInputValue('')
+            setInputValueMessage('')
+        }
+    }
+
+    const search = async e => {
+        e.preventDefault()
+        
+        if (inputValueSearch) {
+            console.log(await searchUsersAndDiscussions(inputValueSearch))
+            setInputValueSearch('')
         }
     }
 
@@ -53,7 +63,15 @@ const Dashboard = () => {
         e.target.parentElement.classList.add('active')
 
         const index = i === -1 ? -1 : discussions[i].discussionID
+
+        if (currentDiscussion !== -1)
+            await setCurrentUserDiscussionScrollPosition(currentDiscussion, scrollPosition)
         
+        if (index !== -1) {
+            setUsers(await getDiscussionUsersStatus(index))
+            setScrollPosition(await getCurrentUserDiscussionScrollPosition(index))
+        }
+
         await setCurrentUserLastDiscussion(index)
         setCurrentDiscussion(index)
         setMessages(i === -1 ? [] : await getCurrentUserDiscussionMessages(index))
@@ -61,8 +79,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const userProfile = await getCurrentUserProfile()
-            setProfile(userProfile)
+            setProfile(await getCurrentUserProfile())
 
             const userLastDiscussion = await getCurrentUserLastDiscussion()
             setCurrentDiscussion(userLastDiscussion)
@@ -80,6 +97,9 @@ const Dashboard = () => {
 
                 const usersStatus = await getDiscussionUsersStatus(userLastDiscussion)
                 setUsers(usersStatus)
+
+                const userScrollPosition = await getCurrentUserDiscussionScrollPosition(userLastDiscussion)
+                setScrollPosition(userScrollPosition)
             }
         }
         catchErrors(fetchData())
@@ -167,7 +187,7 @@ const Dashboard = () => {
                     </div>
 
                     <div className='sendMessage'>
-                        <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput' value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}/>
+                        <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput' value={inputValueMessage} onChange={e => setInputValueMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}/>
                         <button className='sendMessageButton' onClick={sendMessage}>Envoyer</button>
                     </div>
 
@@ -210,7 +230,20 @@ const Dashboard = () => {
                 </>
             ) :
                 <>
-
+                    <button className='createDiscussion'>Créer une discussion</button>
+                    <div className='trendDiscussion'>
+                        <p className='title'>Discussions en tendances</p>
+                        <ul></ul>
+                    </div>
+                    <div className='exploreDiscussion'>
+                        <p className='title'>Explorez la communauté</p>
+                        <p className='titleDescription'>Recherchez une discussion ou une personne.</p>
+                        <div className='searchDiscussion'>
+                            <input type='text' className='searchInput' placeholder='Que recherchez vous ?' value={inputValueSearch} onChange={e => setInputValueSearch(e.target.value)} onKeyPress={e => e.key === 'Enter' ? search(e) : null}/>
+                            <button type='submit' className='searchButton' onClick={search}><i className='fa fa-search'/></button>
+                        </div>
+                        <ul></ul>
+                    </div>
                 </>
             }
         </div>
