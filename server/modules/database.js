@@ -147,14 +147,13 @@ const getMessagesByDiscussionID = async discussionID => {
 }
 
 const getDiscussionUsers = async discussionID => {
-    let response = []
+    let response = [];
     const participants = await knex.select('userID').from('Participate').where('discussionID', '=', discussionID)
 
     if (participants.length > 0) {
         for (const participant of participants) {
-            const user = await knex.select('name', 'picture').from('Users').where('userID', '=', participant.userID)
-            console.log(user)
-            response.push(user)
+            const user = await knex.select('userID', 'name', 'picture').from('Users').where('userID', '=', participant.userID)
+            response.push(user[0])
         }
     }
 

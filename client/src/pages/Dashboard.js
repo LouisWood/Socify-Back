@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
 import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, getDiscussionUsersStatus, setCurrentUserLastDiscussion } from '../scripts/chat'
-import { ListGroup } from 'react-bootstrap'
 import { io } from "socket.io-client"
 import { useLocalStorage } from '../hook/localStorage'
 import logo from '../images/socifyLogo.png'
@@ -30,6 +29,7 @@ const Dashboard = () => {
     }
 
     const sendMessage = e => {
+        console.log('test')
         e.preventDefault()
 
         if (inputValue && profile && discussions) {
@@ -97,7 +97,7 @@ const Dashboard = () => {
 
     const ScrollToBottom = () => {
         useEffect(() => {
-            const element = document.getElementById('messageList')
+            const element = document.getElementById('messagesList')
             element.scrollTop = element.scrollHeight
         })
         return <></>
@@ -105,7 +105,7 @@ const Dashboard = () => {
 
     const ScrollToPosition = () => {
         useEffect(() => {
-            const element = document.getElementById('messageList')
+            const element = document.getElementById('messagesList')
             element.scrollTop = scrollPosition
         })
         return <></>
@@ -146,7 +146,7 @@ const Dashboard = () => {
 
             {currentDiscussion !== -1 ? (
                 <>
-                    <div className='messageList' onScroll={handleScroll} id='messageList'>
+                    <div className='messagesList' onScroll={handleScroll} id='messagesList'>
                         <ul>
                             {messages && (
                                 <>
@@ -171,10 +171,42 @@ const Dashboard = () => {
                         <button className='sendMessageButton' onClick={sendMessage}>Envoyer</button>
                     </div>
 
-                    <ListGroup defaultActiveKey='0' className='usersList'>
-                        <ListGroup.Item action eventKey='0' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
-                        <ListGroup.Item action eventKey='1' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
-                    </ListGroup>
+                    <div className='usersList' id='usersList'>
+                        <ul>
+                            {users && (
+                                <>
+                                    {users.connected && users.connected.length > 0 && (
+                                        <>
+                                            <p className='usersStatus'>{`En ligne - ${users.connected.length}`}</p>
+                                            {users.connected.map((user, i) => (
+                                                <li key={i}>
+                                                    <ul>
+                                                        <img src={user.picture === '' ? socifyDefault : user.picture} alt='avatar' className='picture'/>
+                                                        <p className='name'>{user.name}</p>
+                                                        <p className='date'>{user.date}</p>
+                                                    </ul>
+                                                </li>
+                                            ))}
+                                        </>
+                                    )}
+                                    {users.disconnected && users.disconnected.length > 0 && (
+                                        <>
+                                            <p className='usersStatus'>{`Hors ligne - ${users.disconnected.length}`}</p>
+                                            {users.disconnected.map((user, i) => (
+                                                <li key={i}>
+                                                    <ul>
+                                                        <img src={user.picture === '' ? socifyDefault : user.picture} alt='avatar' className='picture'/>
+                                                        <p className='name'>{user.name}</p>
+                                                        <p className='date'>{user.date}</p>
+                                                    </ul>
+                                                </li>
+                                            ))}
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </ul>
+                    </div>
                 </>
             ) :
                 <>

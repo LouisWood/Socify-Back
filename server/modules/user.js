@@ -1,4 +1,4 @@
-const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, setLastDiscussionByUserID } = require('./database')
+const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsers, setLastDiscussionByUserID } = require('./database')
 
 const axios = require('axios').default
 
@@ -156,8 +156,36 @@ const getUserDiscussionMessages = async discussionID => {
     return await getMessagesByDiscussionID(discussionID)
 }
 
+const getDiscussionUsersStatus = async (discussionID, sockets) => {
+    let connectedUsers = []
+    let disconnectedUsers = []
+    let connectedUsersAll = []
+    for (const socket of sockets) {
+        connectedUsersAll.push(socket.userID)
+    }
+
+    const connectedUsersUnique = [...new Set(connectedUsersAll)]
+    const discussionUsers = await getDiscussionUsers(discussionID)
+
+    discussionUsers.sort((user1, user2) => user1.name - user2.name)
+
+    for (const user of discussionUsers) {
+        if (connectedUsersUnique.includes(user.userID))
+            connectedUsers.push(user)
+        else
+            disconnectedUsers.push(user)
+    }
+
+    return {
+        res: {
+            connected: connectedUsers,
+            disconnected: disconnectedUsers,
+        }
+    }
+}
+
 const setUserLastDiscussion = async (userID, discussionID) => {
     return await setLastDiscussionByUserID(userID, discussionID)
 }
 
-module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, setUserLastDiscussion }
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, setUserLastDiscussion }
