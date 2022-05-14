@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { catchErrors } from '../utils'
 import { getCurrentUserProfile } from '../scripts/user'
-import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, setCurrentUserLastDiscussion } from '../scripts/chat'
+import { getCurrentUserLastDiscussion, getCurrentUserDiscussions, getCurrentUserDiscussionMessages, getDiscussionUsersStatus, setCurrentUserLastDiscussion } from '../scripts/chat'
 import { ListGroup } from 'react-bootstrap'
 import { io } from "socket.io-client"
 import { useLocalStorage } from '../hook/localStorage'
@@ -19,6 +19,7 @@ const Dashboard = () => {
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
     const [scrollPosition, setScrollPosition] = useLocalStorage('scrollPosition', -1)
+    const [users, setUsers] = useState([])
 
     const handleScroll = e => {
         let element = e.target
@@ -68,14 +69,17 @@ const Dashboard = () => {
 
             const userDiscussions = await getCurrentUserDiscussions()
             setDiscussions(userDiscussions)
+            
+            if (userDiscussions.length > 0) {
+                socket.emit('initDiscussions')
+            }
 
             if (userLastDiscussion !== -1) {
                 const userMessages = await getCurrentUserDiscussionMessages(userLastDiscussion)
                 setMessages(userMessages)
-            }
 
-            if (userDiscussions.length > 0) {
-                socket.emit('initDiscussions')
+                const usersStatus = await getDiscussionUsersStatus(userLastDiscussion)
+                setUsers(usersStatus)
             }
         }
         catchErrors(fetchData())
@@ -93,7 +97,7 @@ const Dashboard = () => {
 
     const ScrollToBottom = () => {
         useEffect(() => {
-            const element = document.getElementById('test')
+            const element = document.getElementById('messageList')
             element.scrollTop = element.scrollHeight
         })
         return <></>
@@ -101,13 +105,11 @@ const Dashboard = () => {
 
     const ScrollToPosition = () => {
         useEffect(() => {
-            const element = document.getElementById('test')
+            const element = document.getElementById('messageList')
             element.scrollTop = scrollPosition
         })
         return <></>
     }
-
-    console.log(scrollPosition)
 
     return (
         <div>
@@ -142,35 +144,43 @@ const Dashboard = () => {
                 </li>
             </ul>
 
-            <div className='messageList' onScroll={handleScroll} id='test'>
-                <ul>
-                    {messages && (
-                        <>
-                            {messages.map((message, i) => (
-                                <li key={i}>
-                                    <ul>
-                                        <img src={message.picture === '' ? socifyDefault : message.picture} alt='avatar' className='picture'/>
-                                        <p className='name'>{message.name}</p>
-                                        <p className='date'>{message.date}</p>
-                                        <p className='content'>{message.content}</p>
-                                    </ul>
-                                </li>
-                            ))}
-                            {scrollPosition === -1 ? <ScrollToBottom/> : <ScrollToPosition/>}
-                        </>
-                    )}
-                </ul>
-            </div>
+            {currentDiscussion !== -1 ? (
+                <>
+                    <div className='messageList' onScroll={handleScroll} id='messageList'>
+                        <ul>
+                            {messages && (
+                                <>
+                                    {messages.map((message, i) => (
+                                        <li key={i}>
+                                            <ul>
+                                                <img src={message.picture === '' ? socifyDefault : message.picture} alt='avatar' className='picture'/>
+                                                <p className='name'>{message.name}</p>
+                                                <p className='date'>{message.date}</p>
+                                                <p className='content'>{message.content}</p>
+                                            </ul>
+                                        </li>
+                                    ))}
+                                    {scrollPosition === -1 ? <ScrollToBottom/> : <ScrollToPosition/>}
+                                </>
+                            )}
+                        </ul>
+                    </div>
 
-            <div className='sendMessage'>
-                <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput' value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}/>
-                <button className='sendMessageButton' onClick={sendMessage}>Envoyer</button>
-            </div>
+                    <div className='sendMessage'>
+                        <input type='text' placeholder='Tapez votre message ici' className='sendMessageInput' value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? sendMessage(e) : null}/>
+                        <button className='sendMessageButton' onClick={sendMessage}>Envoyer</button>
+                    </div>
 
-            <ListGroup defaultActiveKey='0' className='usersList'>
-                <ListGroup.Item action eventKey='0' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
-                <ListGroup.Item action eventKey='1' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
-            </ListGroup>
+                    <ListGroup defaultActiveKey='0' className='usersList'>
+                        <ListGroup.Item action eventKey='0' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+                        <ListGroup.Item action eventKey='1' style={{borderRadius: '20px'}}>Test</ListGroup.Item>
+                    </ListGroup>
+                </>
+            ) :
+                <>
+
+                </>
+            }
         </div>
     )
 }

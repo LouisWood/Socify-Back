@@ -52,7 +52,6 @@ function App() {
                                 <Route path="/playlists/:id" element={<Playlist/>} />
                                 <Route path="/playlists" element={<Playlists/>} />
                                 <Route path="/dashboard" element={<Dashboard/>}/>
-                                <Route path="/profile" element={<Profile/>}/>
                                 <Route path="/" element={<Profile/>}/>
                             </Routes>
                         </Router>

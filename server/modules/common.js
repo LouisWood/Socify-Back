@@ -13,10 +13,13 @@ const parseDate = dateToParse => {
     const hours = date.getHours()
     const minutes = date.getMinutes()
 
+    const hoursString = hours < 10 ? `0${hours}` : hours.toString()
+    const minutesString = minutes < 10 ? `0${minutes}` : minutes.toString()
+
     if (year === currentYear && month === currentMonth && day === currentDay)
-        parsedDate = `Aujourd'hui à ${hours}:${minutes}`
+        parsedDate = `Aujourd'hui à ${hoursString}:${minutesString}`
     else if (year === currentYear && month === currentMonth && (day + 1) === currentDay)
-        parsedDate = `Hier à ${hours}:${minutes}`
+        parsedDate = `Hier à ${hoursString}:${minutesString}`
     else
         parsedDate = `${day}/${month}/${year}`
 

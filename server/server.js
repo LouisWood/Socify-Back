@@ -1,4 +1,4 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getDiscussionUsers } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
 const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, setUserLastDiscussion } = require('./modules/user')
@@ -256,6 +256,26 @@ app.post('/messages', async (req, res) => {
         const discussionID = req.body.discussionID
 
         const response = await getUserDiscussionMessages(discussionID)
+        
+        res.json(response)
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/usersStatus', async (req, res) => {
+    if ('discussionID' in req.body) {
+        const discussionID = req.body.discussionID
+
+        const discussionUsers = await getDiscussionUsers(discussionID)
+        const sockets = await io.in(discussionID).fetchSockets()
+
+        //console.log(discussionUsers)
+        //console.log(sockets)
+
+        const response = []
         
         res.json(response)
     } else {
