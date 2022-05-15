@@ -22,7 +22,6 @@ const Dashboard = () => {
     const [users, setUsers] = useState(null)
     const [inputValueSearch, setInputValueSearch] = useState('')
     const [searchResult, setSearchResult] = useState(null)
-    const [friends, setFriends] = useState(null)
     const [show, setShow] = useState(false)
     const [validated, setValidated] = useState(false)
 
@@ -44,8 +43,18 @@ const Dashboard = () => {
             setShow(false)
             setValidated(false)
 
-            if (discussion)
-                setCurrentDiscussion(discussion.discussionID)
+            if (discussion) {
+                setMessages([])
+                setDiscussions(await getCurrentUserDiscussions())
+                setCurrentDiscussion(discussion)
+
+                socket.emit('addDiscussion', {
+                    name: profile.display_name,
+                    discussionID: discussion
+                })
+                
+                setUsers(await getDiscussionUsersStatus(discussion))
+            }
         } else {
             setShow(false)
             setValidated(false)
@@ -132,11 +141,11 @@ const Dashboard = () => {
         const fetchData = async () => {
             setProfile(await getCurrentUserProfile())
 
-            const userLastDiscussion = await getCurrentUserLastDiscussion()
-            setCurrentDiscussion(userLastDiscussion)
-
             const userDiscussions = await getCurrentUserDiscussions()
             setDiscussions(userDiscussions)
+
+            const userLastDiscussion = await getCurrentUserLastDiscussion()
+            setCurrentDiscussion(userLastDiscussion)
             
             if (userDiscussions.length > 0) {
                 socket.emit('initDiscussions')

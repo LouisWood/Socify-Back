@@ -52,21 +52,6 @@ const createDatabaseIfNotExist = async () => {
             table.foreign('userID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
-
-        await knex('Discussions').insert({owner: '', name: 'Moi', picture: 'https://i.scdn.co/image/ab6775700000ee85d0390b295b07f8a52a101767'})
-        await knex('Discussions').insert({owner: '4crvejyosedti4gfzemcx7zmn', name: 'Raf', picture: 'https://i.scdn.co/image/ab6775700000ee855067db235dd3330fd32360a4'})
-
-        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
-        await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
-
-        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
-        await knex('Messages').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
-
-        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1, scrollPosition: -1})
-        await knex('Participate').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2, scrollPosition: -1})
-
-        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 1, scrollPosition: -1})
-        await knex('Participate').insert({userID: '31a5ikz4azfj4c56ozwlk7wzq4ti', discussionID: 2, scrollPosition: -1})
     }
 }
 
@@ -91,7 +76,7 @@ const insertMessageInDiscussion = async (discussionID, userID, content) => {
     let message = {date: (new Date()).toString()}
     const user = await knex.select('name', 'picture').from('Users').where('userID', '=', userID)
 
-    await knex.raw('INSERT INTO Messages (discussionID, userID, content, date) VALUES (?, ?, ?, ?)', [discussionID, userID, content, message.date])
+    await knex('Messages').insert({discussionID: discussionID, userID: userID, content: content, date: message.date})
 
     message.date = parseDate(message.date)
     message.name = user[0].name
@@ -117,7 +102,7 @@ const getDiscussionsByUserID = async userID => {
     let discussions = [];
     const participants = await knex.select('discussionID').from('Participate').where('userID', '=', userID)
 
-    if (participants.length !== 1) {
+    if (participants.length > 0) {
         for (const participant of participants) {
             const discussion = await knex.select('*').from('Discussions').where('discussionID', '=', participant.discussionID)
             if (discussion[0].owner !== '')
@@ -197,10 +182,14 @@ const setDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, disc
     await knex.raw('UPDATE Participate SET scrollPosition = ? WHERE userID = ? AND discussionID = ?', [scrollPosition, userID, discussionID])
 }
 
-const createDiscussion = async (userID, name, picture) => {
-    await knex.raw('INSERT INTO Discussions (owner, name, picture) VALUES (?, ?, ?)', [userID, name, picture])
+const createDiscussion = async (userID, name, picture) => {    
+    const discussion = await knex('Discussions').insert({owner: userID, name: name, picture: picture}).then(data => {
+        return data
+    })
 
-    //const discussion
+    await knex('Participate').insert({userID: userID, discussionID: discussion[0], scrollPosition: -1})
+
+    return discussion[0]
 }
 
 module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion }

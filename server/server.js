@@ -299,7 +299,7 @@ app.post('/usersStatus', async (req, res) => {
 app.post('/lastDiscussion', async (req, res) => {
     const userID = req.signedCookies ? req.signedCookies.userID : null
 
-    if (userID && 'discussionID' in req.body) {
+    if (userID && 'lastDiscussion' in req.body) {
         const lastDiscussion = req.body.lastDiscussion
 
         await setUserLastDiscussion(userID, lastDiscussion)
@@ -381,7 +381,9 @@ app.post('/createDiscussion', async (req, res) => {
 
         const response = await createDiscussion(userID, name, picture)
         
-        res.json(response)
+        res.json({
+            res: response
+        })
     } else {
         res.json({
             error: 'Error'
@@ -419,14 +421,20 @@ io.on('connection', async socket => {
         io.to(data.discussionID).emit('receiveMessage', message)
     })
 
-    socket.on('addDiscussion', data => {
-        socket.join(data.room)
-        io.to(data.room).emit('receiveMessage', data.name + ' a rejoint la discussion')
+    socket.on('addDiscussion', async data => {
+        socket.join(data.discussionID)
+
+        const message = await insertMessageInDiscussion(data.discussionID, socket.userID, `${data.name} a rejoint la discussion`)
+
+        message.discussionID = data.discussionID
+        message.userID = socket.userID
+        message.content = `${data.name} a rejoint la discussion`
+
+        io.to(data.discussionID).emit('receiveMessage', message)
     })
 
     socket.on('removeDiscussion', data => {
-        socket.leave(data.room)
-        io.to(data.room).emit('receiveMessage', data.name + ' a quitté la discussion')
+        socket.leave(data.discussionID)
     })
 })
 
