@@ -1,4 +1,4 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, createDiscussion } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
 const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion, setUserDiscussionScrollPosition } = require('./modules/user')
@@ -360,10 +360,28 @@ app.post('/search', async (req, res) => {
         
         res.json({
             res: {
+                name: name,
                 users: users,
                 discussions: discussions
             }
         })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/createDiscussion', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'name' in req.body && 'picture' in req.body) {
+        const name = req.body.name
+        const picture = req.body.picture
+
+        const response = await createDiscussion(userID, name, picture)
+        
+        res.json(response)
     } else {
         res.json({
             error: 'Error'

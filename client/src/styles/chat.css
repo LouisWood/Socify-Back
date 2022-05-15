@@ -368,14 +368,14 @@
     right: 12%;
     top: 7.6%;
     width: 76%;
-    height: 100%;
+    height: 3%;
 }
 
 .searchDiscussion .searchInput {
     left: 0;
     right: 8%;
     width: 92%;
-    height: 3%;
+    height: 100%;
     border-radius: 0;
     border-top-left-radius: 8px;
     border-bottom-left-radius: 8px;
@@ -393,14 +393,148 @@
     left: 92%;
     right: 0;
     width: 8%;
-    height: 3%;
+    height: 100%;
     border-radius: 0;
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
     background-color: #000000;
-    border: 1px solid rgba(101, 101, 101, 0.5)
+    border: 1px solid rgba(101, 101, 101, 0.5);
 }
 
 .searchDiscussion .searchButton:hover {
     background-color: #272727;
+}
+
+.searchResult {
+    display: inline-block;
+    width: 100%;
+    height: 86%;
+    margin-top: 7%;
+}
+
+.searchResult .titleMiddle {
+    margin-top: 10%;
+}
+
+.searchResult .searchLeft {
+    vertical-align: top;
+    display: inline-block;
+    left: 0;
+    right: 50%;
+    width: 50%;
+}
+
+.searchResult .searchRight {
+    vertical-align: top;
+    display: inline-block;
+    left: 50%;
+    right: 0;
+    width: 50%;
+}
+
+.userResult {
+    margin-right: 1%;
+}
+
+.userResult li {
+    display: inline-block;
+    width: 100%;
+    margin-top: 2%;
+    background-color: #2C2B2B;
+    border-radius: 20px;
+}
+
+.userResult li:hover {
+    background-color: #88888885;
+}
+
+.userResult .picture {
+    display: inline-block;
+    border-radius: 50%;
+    left: 0;
+    margin-top: 1%;
+    margin-bottom: 1%;
+    margin-left: 1%;
+    width: auto;
+    height: auto;
+    max-width: 15%;
+    vertical-align: middle;
+}
+
+.userResult .name {
+    display: inline-block;
+    margin-top: 1.6%;
+    margin-left: 4%;
+    vertical-align: middle;
+    font-size: 0.8vw;
+}
+
+.userResult .button {
+    display: inline-block;
+    margin-top: 1.1%;
+    width: 30%;
+    margin-left: 12%;
+    vertical-align: middle;
+    font-size: 0.8vw;
+    border-radius: 20px;
+}
+
+.discussionResult {
+    margin-right: 1%;
+}
+
+.discussionResult li {
+    display: inline-block;
+    width: 100%;
+    margin-top: 2%;
+    background-color: #2C2B2B;
+    border-radius: 20px;
+}
+
+.discussionResult li:hover {
+    background-color: #88888885;
+}
+
+.discussionResult .picture {
+    display: inline-block;
+    border-radius: 50%;
+    left: 0;
+    margin-top: 1%;
+    margin-bottom: 1%;
+    margin-left: 1%;
+    width: auto;
+    height: auto;
+    max-width: 15%;
+    vertical-align: middle;
+}
+
+.discussionResult .name {
+    display: inline-block;
+    margin-left: 4%;
+    vertical-align: middle;
+    font-size: 0.8vw;
+}
+
+.discussionResult .button {
+    display: inline-block;
+    margin-top: 1.1%;
+    width: 30%;
+    margin-left: 40%;
+    vertical-align: middle;
+    font-size: 0.8vw;
+    border-radius: 20px;
+}
+
+.discussionResult .online {
+    margin-top: -7%;
+    margin-left: 20%;
+    font-size: 0.5 vw;
+    color: rgba(255, 255, 255, 0.8)
+}
+
+.discussionResult .members {
+    margin-top: -7%;
+    margin-left: 42%;
+    font-size: 0.5 vw;
+    color: rgba(255, 255, 255, 0.8)
 }

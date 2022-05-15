@@ -50,3 +50,25 @@ export const searchUsersAndDiscussions = async name => {
     })
     return 'res' in response.data ? response.data.res : null
 }
+
+export const addUserDiscussion = async userID => {
+    const response = await axios.post('/addUser', {
+        userID: userID
+    })
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const joinDiscussionUser = async discussionID => {
+    const response = await axios.post('/joinDiscussion', {
+        discussionID: discussionID
+    })
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const createDiscussion = async (name, picture) => {
+    const response = await axios.post('/createDiscussion', {
+        name: name,
+        picture: picture
+    })
+    return 'res' in response.data ? response.data.res : null
+}

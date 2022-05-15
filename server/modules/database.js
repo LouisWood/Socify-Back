@@ -31,9 +31,10 @@ const createDatabaseIfNotExist = async () => {
         })
         await knex.schema.createTable('Discussions', function (table) {
             table.increments('discussionID').primary()
-            table.string('picture').notNullable()
+            table.string('owner').notNullable()
             table.string('name').notNullable()
-            table.boolean('type').notNullable()
+            table.string('picture').notNullable()
+            table.foreign('owner').references('Users.userID')
         })
         await knex.schema.createTable('Messages', function (table) {
             table.increments('messageID').primary()
@@ -52,8 +53,8 @@ const createDatabaseIfNotExist = async () => {
             table.foreign('discussionID').references('Discussions.discussionID')
         })
 
-        await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee85d0390b295b07f8a52a101767', name: 'Moi', type: false})
-        await knex('Discussions').insert({picture: 'https://i.scdn.co/image/ab6775700000ee855067db235dd3330fd32360a4', name: 'Raf', type: true})
+        await knex('Discussions').insert({owner: '', name: 'Moi', picture: 'https://i.scdn.co/image/ab6775700000ee85d0390b295b07f8a52a101767'})
+        await knex('Discussions').insert({owner: '4crvejyosedti4gfzemcx7zmn', name: 'Raf', picture: 'https://i.scdn.co/image/ab6775700000ee855067db235dd3330fd32360a4'})
 
         await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 1, content: 'Bonjour', date: (new Date()).toString()})
         await knex('Messages').insert({userID: '4crvejyosedti4gfzemcx7zmn', discussionID: 2, content: 'Bonjour', date: (new Date()).toString()})
@@ -119,7 +120,7 @@ const getDiscussionsByUserID = async userID => {
     if (participants.length !== 1) {
         for (const participant of participants) {
             const discussion = await knex.select('*').from('Discussions').where('discussionID', '=', participant.discussionID)
-            if (discussion[0].type)
+            if (discussion[0].owner !== '')
                 discussions.push(discussion[0])
             else
                 friends.unshift(discussion[0])
@@ -180,7 +181,7 @@ const getUsersFromName = async name => {
 }
 
 const getDiscussionsFromName = async name => {
-    return await knex.raw('SELECT discussionID, picture, name FROM Discussions WHERE type = true AND name LIKE ?', [`%${name}%`])
+    return await knex.raw(`SELECT discussionID, picture, name FROM Discussions WHERE owner != '' AND name LIKE ?`, [`%${name}%`])
 }
 
 const getDiscussionNumberOfParticipant = async discussionID => {
@@ -196,4 +197,10 @@ const setDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, disc
     await knex.raw('UPDATE Participate SET scrollPosition = ? WHERE userID = ? AND discussionID = ?', [scrollPosition, userID, discussionID])
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID }
+const createDiscussion = async (userID, name, picture) => {
+    await knex.raw('INSERT INTO Discussions (owner, name, picture) VALUES (?, ?, ?)', [userID, name, picture])
+
+    //const discussion
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion }
