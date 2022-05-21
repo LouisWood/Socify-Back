@@ -20,13 +20,13 @@ const createDatabaseIfNotExist = async () => {
             table.string('picture').notNullable()
             table.integer('lastDiscussion').notNullable()
         })
-        await knex.schema.createTable('Friends', function (table) {
+        await knex.schema.createTable('Followers', function (table) {
             table.string('userID').notNullable()
-            table.string('friendID').notNullable()
-            table.string('discussionID').notNullable()
-            table.primary(['userID', 'friendID'])
+            table.string('followerID').notNullable()
+            table.integer('discussionID').notNullable()
+            table.primary(['userID', 'followerID'])
             table.foreign('userID').references('Users.userID')
-            table.foreign('friendID').references('Users.userID')
+            table.foreign('followerID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
         await knex.schema.createTable('Discussions', function (table) {
@@ -38,7 +38,7 @@ const createDatabaseIfNotExist = async () => {
         })
         await knex.schema.createTable('Messages', function (table) {
             table.increments('messageID').primary()
-            table.string('discussionID').notNullable()
+            table.integer('discussionID').notNullable()
             table.string('userID').notNullable()
             table.string('content').notNullable()
             table.string('date').notNullable()
@@ -48,7 +48,9 @@ const createDatabaseIfNotExist = async () => {
         await knex.schema.createTable('Participate', function (table) {
             table.string('userID').notNullable()
             table.integer('discussionID').notNullable()
+            table.string('lastView').notNullable()
             table.integer('scrollPosition').notNullable()
+            table.primary(['userID', 'discussionID'])
             table.foreign('userID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
@@ -73,11 +75,20 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
 }
 
 const insertMessageInDiscussion = async (discussionID, userID, content) => {
-    let message = {date: (new Date()).toString()}
+    const date = new Date()
+    let message = {date: date.toString()}
     const user = await knex.select('name', 'picture').from('Users').where('userID', '=', userID)
 
     await knex('Messages').insert({discussionID: discussionID, userID: userID, content: content, date: message.date})
+    
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
 
+    const hoursString = hours < 10 ? `0${hours}` : hours.toString()
+    const minutesString = minutes < 10 ? `0${minutes}` : minutes.toString()
+
+    message.rawDate = message.date
+    message.dateMin = `${hoursString}:${minutesString}`
     message.date = parseDate(message.date)
     message.name = user[0].name
     message.picture = user[0].picture
@@ -86,7 +97,7 @@ const insertMessageInDiscussion = async (discussionID, userID, content) => {
 }
 
 const getLastDiscussionByUserID = async userID => {
-    let lastDiscussion = -1;
+    let lastDiscussion = -1
     const rows = await knex.select('lastDiscussion').from('Users').where('userID', '=', userID)
 
     if (rows.length === 1)
@@ -98,8 +109,8 @@ const getLastDiscussionByUserID = async userID => {
 }
 
 const getDiscussionsByUserID = async userID => {
-    let friends = [];
-    let discussions = [];
+    let follow = []
+    let discussions = []
     const participants = await knex.select('discussionID').from('Participate').where('userID', '=', userID)
 
     if (participants.length > 0) {
@@ -107,13 +118,17 @@ const getDiscussionsByUserID = async userID => {
             const discussion = await knex.select('*').from('Discussions').where('discussionID', '=', participant.discussionID)
             if (discussion[0].owner !== '')
                 discussions.push(discussion[0])
-            else
-                friends.unshift(discussion[0])
+            else {
+                const userInfo = await knex.select('name', 'picture').from('Users').where('userID', '!=', userID)
+                discussion[0].name = userInfo[0].name
+                discussion[0].picture = userInfo[0].picture
+                follow.unshift(discussion[0])
+            }
         }
     }
 
     return {
-        res: friends.concat(discussions)
+        res: follow.concat(discussions)
     }
 }
 
@@ -123,6 +138,17 @@ const getMessagesByDiscussionID = async discussionID => {
     if (messages.length > 0) {
         for (const message of messages) {
             const user = await knex.select('name', 'picture').from('Users').where('userID', '=', message.userID)
+
+            const date = new Date(message.date)
+            
+            const hours = date.getHours()
+            const minutes = date.getMinutes()
+
+            const hoursString = hours < 10 ? `0${hours}` : hours.toString()
+            const minutesString = minutes < 10 ? `0${minutes}` : minutes.toString()
+
+            message.rawDate = message.date
+            message.dateMin = `${hoursString}:${minutesString}`
             message.date = parseDate(message.date)
             message.name = user[0].name
             message.picture = user[0].picture
@@ -134,8 +160,8 @@ const getMessagesByDiscussionID = async discussionID => {
     }
 }
 
-const getDiscussionUsersByUserID = async discussionID => {
-    let response = [];
+const getDiscussionUsersByDiscussionID = async discussionID => {
+    let response = []
     const participants = await knex.select('userID').from('Participate').where('discussionID', '=', discussionID)
 
     if (participants.length > 0) {
@@ -149,7 +175,7 @@ const getDiscussionUsersByUserID = async discussionID => {
 }
 
 const getDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, discussionID) => {
-    let scrollPosition = -1;
+    let scrollPosition = -1
     const participant = await knex.select('scrollPosition').from('Participate').where('userID', '=', userID).where('discussionID', '=', discussionID)
 
     if (participant.length > 0) {
@@ -161,25 +187,29 @@ const getDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, disc
     }
 }
 
-const getUsersFromName = async name => {
-    return await knex.raw('SELECT userID, name, picture FROM Users WHERE name LIKE ?', [`%${name}%`])
+const getUsersFromName = async (userID, name) => {
+    return await knex.select('userID', 'name', 'picture').from('Users').where('name', 'like', `%${name}%`).where('userID', '!=', userID)
 }
 
 const getDiscussionsFromName = async name => {
-    return await knex.raw(`SELECT discussionID, picture, name FROM Discussions WHERE owner != '' AND name LIKE ?`, [`%${name}%`])
+    return await knex.select('discussionID', 'name', 'picture').from('Discussions').where('owner', '!=', '').where('name', 'like', `%${name}%`)
 }
 
 const getDiscussionNumberOfParticipant = async discussionID => {
-    const discussions = await knex.raw('SELECT userID FROM Participate WHERE discussionID = ?', [discussionID])
+    const discussions = await knex.select('userID').from('Participate').where('discussionID', '=', discussionID)
     return discussions.length
 }
 
+const getAllDiscussions = async () => {
+    return await knex.select('discussionID', 'name', 'picture').from('Discussions').where('owner', '!=', '')
+}
+
 const setLastDiscussionByUserID = async (userID, lastDiscussion) => {
-    await knex.raw('UPDATE Users SET lastDiscussion = ? WHERE userID = ?', [lastDiscussion, userID])
+    await knex('Users').update('lastDiscussion', lastDiscussion).where('userID', '=', userID)
 }
 
 const setDiscussionScrollPositionByUserIDAndByDiscussionID = async (userID, discussionID, scrollPosition) => {
-    await knex.raw('UPDATE Participate SET scrollPosition = ? WHERE userID = ? AND discussionID = ?', [scrollPosition, userID, discussionID])
+    await knex('Participate').update('scrollPosition', scrollPosition).where('userID', '=', userID).where('discussionID', '=', discussionID)
 }
 
 const createDiscussion = async (userID, name, picture) => {    
@@ -187,9 +217,70 @@ const createDiscussion = async (userID, name, picture) => {
         return data
     })
 
-    await knex('Participate').insert({userID: userID, discussionID: discussion[0], scrollPosition: -1})
+    await knex('Participate').insert({userID: userID, discussionID: discussion[0], lastView: (new Date()).toString(), scrollPosition: -1})
 
     return discussion[0]
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion }
+const createDiscussionUser = async (userID) => {
+    const discussion = await knex('Discussions').insert({owner: '', name: '', picture: ''}).then(data => {
+        return data
+    })
+
+    await knex('Participate').insert({userID: userID, discussionID: discussion[0], lastView: (new Date()).toString(), scrollPosition: -1})
+
+    return discussion[0]
+}
+
+const insertFollower = async (userID, follow, discussionID) => {
+    await knex('Followers').insert({userID: follow, followerID: userID, discussionID: discussionID})
+}
+
+const joinDiscussion = async (userID, discussionID, date) => {
+    await knex('Participate').insert({userID: userID, discussionID: discussionID, lastView: date.toString(), scrollPosition: -1})
+}
+
+const getFollow = async (userID) => {
+    return await knex.select('userID').from('Followers').where('followerID', '=', userID)
+}
+
+const getdiscussionOwner = async (discussionID) => {
+    const discussion = await knex.select('owner').from('Discussions').where('discussionID', '=', discussionID)
+    return discussion[0].owner
+}
+
+const getFollowID = async (discussionID) => {
+    const follow = await knex.select('userID').from('Followers').where('discussionID', '=', discussionID)
+    return follow[0].userID
+}
+
+const getMessagesWaiting = async (userID) => {
+    let discussionsMap = new Map()
+    const discussions = await knex.select('discussionID', 'lastView').from('Participate').where('userID', '=', userID)
+
+    if (discussions.length > 0) {
+        for (const discussion of discussions) {
+            let count = 0
+            const messages = await knex.select('date').from('Messages').where('discussionID', '=', discussion.discussionID).where('userID', '!=', userID)
+
+            for (const message of messages) {
+                if (Date.parse(message.date) > Date.parse(discussion.lastView))
+                    count++
+            }
+            
+            discussionsMap.set(discussion.discussionID, count)
+        }
+    }
+
+    return discussionsMap
+}
+
+const setDiscussionLastView = async (userID, discussionID, lastView) => {
+    await knex('Participate').update('lastView', lastView).where('userID', '=', userID).where('discussionID', '=', discussionID)
+}
+
+const checkIfUserInDiscussion = async (userID, discussionID) => {
+    return await knex.select('userID').from('Participate').where('userID', '=', userID).where(discussionID, '=', discussionID)
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, getAllDiscussions, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion, createDiscussionUser, insertFollower, joinDiscussion, getFollow, getdiscussionOwner, getFollowID, getMessagesWaiting, setDiscussionLastView, checkIfUserInDiscussion }

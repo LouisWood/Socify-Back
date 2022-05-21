@@ -1,4 +1,4 @@
-const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByUserID, getDiscussionScrollPositionByUserIDAndByDiscussionID, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID } = require('./database')
+const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID } = require('./database')
 
 const axios = require('axios').default
 
@@ -165,7 +165,7 @@ const getDiscussionUsersStatus = async (discussionID, sockets) => {
     }
 
     const connectedUsersUnique = [...new Set(connectedUsersAll)]
-    const discussionUsers = await getDiscussionUsersByUserID(discussionID)
+    const discussionUsers = await getDiscussionUsersByDiscussionID(discussionID)
 
     discussionUsers.sort((user1, user2) => user1.name - user2.name)
 

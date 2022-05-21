@@ -1,4 +1,4 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, createDiscussion } = require('./modules/database')
+const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, getAllDiscussions, createDiscussion, createDiscussionUser, insertFollower, joinDiscussion, getFollow, getdiscussionOwner, getFollowID, getMessagesWaiting, setDiscussionLastView, checkIfUserInDiscussion } = require('./modules/database')
 const { getArtistTopTracks, getTracksInfo, getPlaylistByID } = require('./modules/music')
 const { checkIfTokenIsExpired, getAccessToken } = require('./modules/token')
 const { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion, setUserDiscussionScrollPosition } = require('./modules/user')
@@ -334,17 +334,19 @@ app.post('/scrollPosition', async (req, res) => {
 })
 
 app.post('/search', async (req, res) => {
-    if ('name' in req.body) {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'name' in req.body) {
         const name = req.body.name
 
-        const users = await getUsersFromName(name)
+        const users = await getUsersFromName(userID, name)
         const discussions = await getDiscussionsFromName(name)
 
         if (users.length > 0)
             users.sort((user1, user2) => user1.name - user2.name)
 
         if (discussions.length > 0) {
-            discussions.sort((user1, user2) => user1.name - user2.name)
+            discussions.sort((discussion1, discussion2) => discussion1.name - discussion2.name)
             for (const discussion of discussions) {
                 let connectUsers = []
                 const sockets = await io.to(discussion.discussionID).fetchSockets()
@@ -372,6 +374,43 @@ app.post('/search', async (req, res) => {
     }
 })
 
+app.post('/followUser', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'userID' in req.body) {
+        const follow = req.body.userID
+
+        const discussionID = await createDiscussionUser(userID)
+        await insertFollower(userID, follow, discussionID)
+        
+        res.json({
+            res: discussionID
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/joinDiscussion', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'discussionID' in req.body) {
+        const discussionID = req.body.discussionID
+
+        await joinDiscussion(userID, discussionID, new Date((Date.parse(new Date())) - 1))
+        
+        res.json({
+            res: 'done'
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
 app.post('/createDiscussion', async (req, res) => {
     const userID = req.signedCookies ? req.signedCookies.userID : null
 
@@ -383,6 +422,80 @@ app.post('/createDiscussion', async (req, res) => {
         
         res.json({
             res: response
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.get('/discussionsTrend', async (req, res) => {
+    const discussions = await getAllDiscussions()
+
+    if (discussions.length > 0) {
+        for (const discussion of discussions) {
+            let connectUsers = []
+            const sockets = await io.to(discussion.discussionID).fetchSockets()
+            
+            for (const socket of sockets)
+                if (connectUsers.indexOf(socket.userID) === -1)
+                    connectUsers.push(socket.userID)
+
+            discussion.online = connectUsers.length
+            discussion.members = await getDiscussionNumberOfParticipant(discussion.discussionID)
+        }
+        discussions.sort((discussion1, discussion2) => discussion1.members - discussion2.members)
+    }
+    
+    res.json({
+        res: discussions
+    })
+})
+
+app.get('/follow', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID) {
+        const response = await getFollow(userID)
+        
+        res.json({
+            res: response
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.get('/messagesWaiting', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID) {
+        const response = await getMessagesWaiting(userID)
+        
+        res.json({
+            res: Array.from(response)
+        })
+    } else {
+        res.json({
+            error: 'Error'
+        })
+    }
+})
+
+app.post('/lastView', async (req, res) => {
+    const userID = req.signedCookies ? req.signedCookies.userID : null
+
+    if (userID && 'discussionID' in req.body && 'lastView' in req.body) {
+        const discussionID = req.body.discussionID
+        const lastView = req.body.lastView
+
+        await setDiscussionLastView(userID, discussionID, lastView)
+        
+        res.json({
+            res: 'Done'
         })
     } else {
         res.json({
@@ -412,6 +525,31 @@ io.on('connection', async socket => {
     })
 
     socket.on('sendMessage', async data => {
+        if (await getdiscussionOwner(data.discussionID) === '') {
+            const followID = await getFollowID(data.discussionID)
+            const discussion = await checkIfUserInDiscussion(followID, data.discussionID)
+
+            if (discussion.length === 0) {
+                await joinDiscussion(followID, data.discussionID, new Date((Date.parse(new Date())) - 1))
+
+                let socketFollow = null
+                const sockets = await io.fetchSockets()
+
+                for (const socket of sockets)
+                    if (socket.userID === followID)
+                        socketFollow = socket
+
+                if (socketFollow.id) {
+                    socketFollow.join(data.discussionID)
+
+                    const discussions = await getDiscussionsByUserID(followID)
+                    io.in(socketFollow.id).emit('receiveMessageDiscussion', {
+                        discussions: discussions.res
+                    })
+                }
+            }
+        }
+
         const message = await insertMessageInDiscussion(data.discussionID, socket.userID, data.content)
 
         message.discussionID = data.discussionID
@@ -421,19 +559,21 @@ io.on('connection', async socket => {
         io.to(data.discussionID).emit('receiveMessage', message)
     })
 
-    socket.on('addDiscussion', async data => {
+    socket.on('joinDiscussion', async data => {
         socket.join(data.discussionID)
 
-        const message = await insertMessageInDiscussion(data.discussionID, socket.userID, `${data.name} a rejoint la discussion`)
+        if (data.type) {
+            const message = await insertMessageInDiscussion(data.discussionID, socket.userID, `${data.name} a rejoint la discussion`)
+    
+            message.discussionID = data.discussionID
+            message.userID = socket.userID
+            message.content = `${data.name} a rejoint la discussion`
 
-        message.discussionID = data.discussionID
-        message.userID = socket.userID
-        message.content = `${data.name} a rejoint la discussion`
-
-        io.to(data.discussionID).emit('receiveMessage', message)
+            io.to(data.discussionID).emit('receiveMessage', message)
+        }
     })
 
-    socket.on('removeDiscussion', data => {
+    socket.on('leaveDiscussion', data => {
         socket.leave(data.discussionID)
     })
 })
@@ -442,24 +582,3 @@ server.listen(8000, async () => {
     console.log('Listening on port 8000')
     await createDatabaseIfNotExist()
 })
-
-
-/*
-const store = new KnexSessionStore({
-    knex: knex,
-    tablename: 'sessions',
-    sidfieldname: 'sid',
-    createtable: true,
-    clearInterval: 60 * 60 * 1000
-})
-
-app.use(session({
-    secret: process.env.process.env.SECRET_KEY,
-    resave: false,
-    saveUninitialized: false,
-    store: store,
-    cookie: {
-        maxAge: 60 * 60 * 1000
-    }
-}))
-*/

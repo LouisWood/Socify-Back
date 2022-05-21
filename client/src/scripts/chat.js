@@ -1,5 +1,53 @@
 import axios from 'axios'
 
+export const checkIfInDiscussion = (discussions, find) => {
+    let found = false
+
+    if (discussions.length > 0) {
+        for (const discussion of discussions) {
+            if (discussion.discussionID === find) {
+                found = true
+                break
+            }
+        }
+    }
+
+    return found
+}
+
+export const checkIfFollowingUser = (follow, find) => {
+    let found = false
+
+    if (follow.length > 0) {
+        for (const user of follow) {
+            if (user.userID === find) {
+                found = true
+                break
+            }
+        }
+    }
+
+    return found
+}
+
+export const checkLastMessageDate = (message, lastMessage) => {
+    const date = new Date(message.rawDate)
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const day = date.getDate()
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
+
+    const oldDate = new Date(lastMessage.rawDate)
+    const oldYear = oldDate.getFullYear()
+    const oldMonth = oldDate.getMonth()
+    const oldDay = oldDate.getDate()
+    const oldHours = oldDate.getHours()
+    const oldMinutes = oldDate.getMinutes()
+
+    return (message.userID === lastMessage.userID && year === oldYear && month === oldMonth && day === oldDay && hours === oldHours && (minutes - 11) < oldMinutes) ? true : false
+}
+
 export const getCurrentUserLastDiscussion = async () => {
     const response = await axios.get('/lastDiscussion')
     return 'res' in response.data ? response.data.res : null
@@ -51,18 +99,19 @@ export const searchUsersAndDiscussions = async name => {
     return 'res' in response.data ? response.data.res : null
 }
 
-export const addUserDiscussion = async userID => {
-    const response = await axios.post('/addUser', {
-        userID: userID
+export const followDiscussionUser = async (userID, name, picture) => {
+    const response = await axios.post('/followUser', {
+        userID: userID,
+        name: name,
+        picture: picture
     })
     return 'res' in response.data ? response.data.res : null
 }
 
 export const joinDiscussionUser = async discussionID => {
-    const response = await axios.post('/joinDiscussion', {
+    await axios.post('/joinDiscussion', {
         discussionID: discussionID
     })
-    return 'res' in response.data ? response.data.res : null
 }
 
 export const createDiscussion = async (name, picture) => {
@@ -71,4 +120,26 @@ export const createDiscussion = async (name, picture) => {
         picture: picture
     })
     return 'res' in response.data ? response.data.res : null
+}
+
+export const getdiscussionsTrend = async () => {
+    const response = await axios.get('/discussionsTrend')
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const getCurrentUserFollow = async () => {
+    const response = await axios.get('/follow')
+    return 'res' in response.data ? response.data.res : null
+}
+
+export const getCurrentUserMessagesWaiting = async () => {
+    const response = await axios.get('/messagesWaiting')
+    return 'res' in response.data ? new Map(response.data.res) : null
+}
+
+export const setCurrentUserDiscussionLastView = async (discussionID, lastView) => {
+    await axios.post('/lastView', {
+        discussionID: discussionID,
+        lastView: lastView
+    })
 }
