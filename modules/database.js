@@ -1,6 +1,6 @@
 const axios = require('axios')
 
-axios.defaults.baseURL = 'https://socify-back.vercel.app/'
+axios.defaults.baseURL = 'https://socify-database.glitch.me/'
 
 const insertUserInDatabase = async (res, userData, tokenData, topArtistT, topTrackT) => {
     await axios.post('/insertUserInDatabase', {
