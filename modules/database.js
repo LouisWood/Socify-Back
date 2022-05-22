@@ -14,12 +14,55 @@ const knex = require('knex')({
 
 const createDatabaseIfNotExist = async () => {
     if (!dbExist) {
+        await knex.schema.createTable('Artist', function (table) {
+            table.string('artistID').primary().notNullable()
+            table.string('name').notNullable()
+            table.string('image').notNullable()
+        })
+
+        await knex.schema.createTable('Track', function (table) {
+            table.string('trackID').primary().notNullable()
+            table.string('name').notNullable()
+            table.string('uri').notNullable()
+            table.string('image').notNullable()
+            table.string('artistName').notNullable()
+            table.string('albumName').notNullable()
+            table.string('duration').notNullable()
+        })
+
+        await knex.schema.createTable('TopArtistList', function (table) {
+            table.primary(['listID', 'range'])
+            table.string('listID').notNullable()
+            table.string('range').notNullable()
+
+            for(i = 0; i < 20; i++) {
+                table.string('artistID' + i)
+                table.foreign('artistID' + i).references('Artist.artistID')
+            }
+
+            table.foreign('listID').references('Users.userID')
+        }) 
+
+        await knex.schema.createTable('TopTrackList', function (table) {
+            table.primary(['ListID', 'range'])
+            table.string('listID').notNullable()
+            table.string('range').notNullable()
+
+            for(i = 0; i < 20; i++) {
+                table.string('trackID' + i)
+                table.foreign('trackID' + i).references('Track.trackID')
+            }
+
+            table.foreign('listID').references('Users.userID')
+        })
+
         await knex.schema.createTable('Users', function (table) {
             table.string('userID').primary().notNullable()
             table.string('name').notNullable()
             table.string('picture').notNullable()
             table.integer('lastDiscussion').notNullable()
         })
+
         await knex.schema.createTable('Followers', function (table) {
             table.string('userID').notNullable()
             table.string('followerID').notNullable()
@@ -29,6 +72,7 @@ const createDatabaseIfNotExist = async () => {
             table.foreign('followerID').references('Users.userID')
             table.foreign('discussionID').references('Discussions.discussionID')
         })
+
         await knex.schema.createTable('Discussions', function (table) {
             table.increments('discussionID').primary()
             table.string('owner').notNullable()
@@ -36,6 +80,7 @@ const createDatabaseIfNotExist = async () => {
             table.string('picture').notNullable()
             table.foreign('owner').references('Users.userID')
         })
+
         await knex.schema.createTable('Messages', function (table) {
             table.increments('messageID').primary()
             table.integer('discussionID').notNullable()
@@ -45,6 +90,7 @@ const createDatabaseIfNotExist = async () => {
             table.foreign('discussionID').references('Discussions.discussionID')
             table.foreign('userID').references('Users.userID')
         })
+
         await knex.schema.createTable('Participate', function (table) {
             table.string('userID').notNullable()
             table.integer('discussionID').notNullable()
@@ -57,10 +103,11 @@ const createDatabaseIfNotExist = async () => {
     }
 }
 
-const insertUserInDatabase = async (res, userData, tokenData) => {
+const insertUserInDatabase = async (res, userData, tokenData, topArtistT, topTrackT) => {
     const currentTime = new Date()
     const expireTime = new Date(currentTime.getTime() + 55 * 60 * 1000)
     const picture = userData.images.length > 0 ? userData.images[0].url : ''
+    const rangeTerm = ['short_term', 'medium_term', 'long_term']
 
     res.cookie('userID', userData.id, {signed: true})
     res.cookie('access_token', tokenData.access_token, {signed: true})
@@ -71,7 +118,127 @@ const insertUserInDatabase = async (res, userData, tokenData) => {
 
     if (rows.length !== 1) {
         await knex('Users').insert({userID: userData.id, name: userData.display_name, picture: picture, lastDiscussion: -1})
+        
+        for(i = 0; i < rangeTerm.length; i++) {
+            await knex('TopArtistList').insert({listID: userData.id, range: rangeTerm[i]}) 
+            await knex('TopTrackList').insert({listID: userData.id, range: rangeTerm[i]}) 
+        }
+
+        await fillTopArtistInDatabase(topArtistT, userData.id); 
+        await fillTopTrackInDatabase(topTrackT, userData.id)
     }
+}
+
+const fillTopArtistInDatabase = async (topArtist, listID) => {
+    const rangeTerm = ['short_term', 'medium_term', 'long_term']
+    
+    for(j = 0; j < topArtist.length; j++) {
+        topArtistElement = topArtist[j].res.items
+
+        if(topArtistElement.length > 1) {
+            for(i = 0; i < topArtistElement.length; i++) {
+                await knex.raw('UPDATE TopArtistList SET artistID' + i + ' = ? WHERE listID = ? AND range = ?', [topArtistElement[i].id, listID, rangeTerm[j]])
+                const artistrow = await knex('Artist').select('*').where('artistID', '=', topArtistElement[i].id)
+                if(artistrow.length == 0)
+                    await knex('Artist').insert({artistID: topArtistElement[i].id, name: topArtistElement[i].name, image: topArtistElement[i].images[0].url})
+            }
+        }
+    }
+}
+
+const fillTopTrackInDatabase = async (topTrack, listID) => {
+    const rangeTerm = ['short_term', 'medium_term', 'long_term']
+
+    for(l = 0; l < topTrack.length; l++) {
+        topTrackElement = topTrack[l].res.items
+        if(topTrackElement.length > 1) {
+            for(k = 0; k < topTrackElement.length; k++) {
+                await knex.raw('UPDATE TopTrackList SET trackID' + k + ' = ? WHERE ListID = ? AND range = ?', [topTrackElement[k].id, listID, rangeTerm[l]])
+                const trackRow = await knex('Track').select('*').where('trackID', '=', topTrackElement[k].id)
+                if(trackRow.length == 0)
+                    await knex('Track').insert({trackID: topTrackElement[k].id, name: topTrackElement[k].name, 
+                                               uri:topTrackElement[k].uri, image: topTrackElement[k].album.images[2].url, 
+                                               artistName: topTrackElement[k].artists[0].name, albumName: topTrackElement[k].album.name, 
+                                               duration: topTrackElement[k].duration_ms})
+            }
+        }
+    }
+}
+
+const getLastDiscussionByUserID = async userID => {
+    let lastDiscussion = -1
+    const rows = await knex.select('lastDiscussion').from('Users').where('userID', '=', userID)
+
+    if (rows.length === 1)
+        lastDiscussion = rows[0].lastDiscussion
+    
+    return {
+        res: lastDiscussion
+    }
+}
+
+const getUserFromDB = async(userID) => {
+   return (await knex.raw('SELECT * FROM Users WHERE userID = \'' + userID + '\' '))[0]
+}
+
+const getTopArtistsFromDB = async (userID, time_range) => {
+    if ((await knex.select('userID').from('Users').where('userID', '=', userID)).length === 0)
+        return null
+    
+    const topArtistList = Object.values((await knex.raw('SELECT * FROM TopArtistList WHERE range = \'' 
+                                                        + time_range + '\' AND listID = \'' + userID +'\''))[0])
+    artistDetails = []
+
+    for(let i = 2; i < topArtistList.length; i++)
+        artistDetails.push(await knex('Artist').select('*').where('artistID', '=', topArtistList[i]).andWhere('artistID', '!=', 'null'))
+
+    return artistDetails
+}
+
+const getTopTrackFromDB = async(userID, time_range) => {
+    if ((await knex.select('userID').from('Users').where('userID', '=', userID)).length === 0)
+        return null
+    
+    const topTrackList = Object.values((await knex.raw('SELECT * FROM TopTrackList WHERE range = \'' 
+                                                        + time_range + '\' AND listID = \'' + userID +'\''))[0])
+    trackDetails = []
+
+    for(let i = 2; i < topTrackList.length; i++)
+        trackDetails.push(await knex('Track').select('*').where('trackID', '=', topTrackList[i]).andWhere('trackID', '!=', 'null'))
+    
+    return trackDetails
+}
+
+const getOtherUsersFromDB = async(userID) => {
+    const users = await knex('Users').select('*').where('userID', '!=', userID)
+
+    return users
+}
+
+const getFollowedUsers = async(userID) => {
+    const followed = await getFollow(userID)
+    const nbrFollowed = followed.length
+    const userFollowed = []
+
+    for( i = 0; i < followed.length; i++) {
+        let user = await getUserFromDB(followed[i].userID)
+        userFollowed.push(user)
+    }
+
+    return {nbrFollowed, userFollowed}
+}
+
+const getFollowersUsers = async(userID) => {
+    const follower = await knex.select('followerID').from('Followers').where('userID', '=', userID)
+    const nbrFollower = follower.length
+    const userFollower = []
+
+    for( i = 0; i < follower.length; i++) {
+        let user = await getUserFromDB(follower[i].followerID)
+        userFollower.push(user)
+    }
+
+    return {nbrFollower, userFollower}
 }
 
 const insertMessageInDiscussion = async (discussionID, userID, content) => {
@@ -94,18 +261,6 @@ const insertMessageInDiscussion = async (discussionID, userID, content) => {
     message.picture = user[0].picture
 
     return message
-}
-
-const getLastDiscussionByUserID = async userID => {
-    let lastDiscussion = -1
-    const rows = await knex.select('lastDiscussion').from('Users').where('userID', '=', userID)
-
-    if (rows.length === 1)
-        lastDiscussion = rows[0].lastDiscussion
-    
-    return {
-        res: lastDiscussion
-    }
 }
 
 const getDiscussionsByUserID = async userID => {
@@ -244,7 +399,7 @@ const getFollow = async (userID) => {
     return await knex.select('userID').from('Followers').where('followerID', '=', userID)
 }
 
-const getdiscussionOwner = async (discussionID) => {
+const getDiscussionOwner = async (discussionID) => {
     const discussion = await knex.select('owner').from('Discussions').where('discussionID', '=', discussionID)
     return discussion[0].owner
 }
@@ -283,4 +438,23 @@ const checkIfUserInDiscussion = async (userID, discussionID) => {
     return await knex.select('userID').from('Participate').where('userID', '=', userID).where(discussionID, '=', discussionID)
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion, getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName, getDiscussionsFromName, getDiscussionNumberOfParticipant, getAllDiscussions, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion, createDiscussionUser, insertFollower, joinDiscussion, getFollow, getdiscussionOwner, getFollowID, getMessagesWaiting, setDiscussionLastView, checkIfUserInDiscussion }
+const getDiscussion = async userID => {
+    return await knex.select('discussionID').from('Participate').where('userID', '=', userID)
+}
+
+const getFollowerDiscussionID = async (userID, followerID) => {
+    return await knex.select('discussionID').from('Followers').where('userID', '=', userID).where('followerID', '=', followerID)
+}
+
+module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion,
+    getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID,
+    getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName,
+    getDiscussionsFromName, getDiscussionNumberOfParticipant, getAllDiscussions,
+    setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID, createDiscussion,
+    createDiscussionUser, insertFollower, joinDiscussion,
+    getFollow, getDiscussionOwner, getFollowID,
+    getMessagesWaiting, setDiscussionLastView, checkIfUserInDiscussion,
+    getTopArtistsFromDB, getTopTrackFromDB, getUserFromDB,
+    fillTopArtistInDatabase, fillTopTrackInDatabase, getOtherUsersFromDB,
+    getFollowedUsers, getFollowersUsers, getDiscussion,
+    getFollowerDiscussionID }

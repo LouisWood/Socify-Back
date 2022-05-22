@@ -1,4 +1,8 @@
-const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID, getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, setLastDiscussionByUserID, setDiscussionScrollPositionByUserIDAndByDiscussionID } = require('./database')
+const { getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID,
+    getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, setLastDiscussionByUserID,
+    setDiscussionScrollPositionByUserIDAndByDiscussionID, getTopArtistsFromDB, getTopTrackFromDB,
+    getUserFromDB, getOtherUsersFromDB, getFollowedUsers,
+    getFollowersUsers } = require('./database')
 
 const axios = require('axios').default
 
@@ -47,9 +51,7 @@ const getCurrentUserPlaylists = async (access_token) => {
     return response
 }
 
-const getCurrentUserTopArtists = async (access_token) => {
-    const time_range = 'short_term'
-
+const getCurrentUserTopArtists = async (access_token, time_range) => {
     const response = await axios.get(
         `/me/top/artists?time_range=${time_range}`, {
         headers: {
@@ -70,9 +72,7 @@ const getCurrentUserTopArtists = async (access_token) => {
     return response
 }
 
-const getCurrentUserTopTracks = async (access_token) => {
-    const time_range = 'short_term'
-
+const getCurrentUserTopTracks = async (access_token, time_range) => {
     const response = await axios.get(
         `/me/top/tracks?time_range=${time_range}`, {
         headers: {
@@ -196,4 +196,32 @@ const setUserDiscussionScrollPosition = async (userID, discussionID, scrollPosit
     await setDiscussionScrollPositionByUserIDAndByDiscussionID(userID, discussionID, scrollPosition)
 }
 
-module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists, getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist, getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages, getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion, setUserDiscussionScrollPosition }
+const getUser = async(userID) => {
+    return await getUserFromDB(userID)
+}
+const getTArtist = async (userID, time_range) => {
+    return await getTopArtistsFromDB(userID, time_range)
+   }
+
+const getTTrack = async(userID, time_range) => {
+    return await getTopTrackFromDB(userID, time_range)
+}
+
+const getOthers = async(userID) => {
+    return await getOtherUsersFromDB(userID)
+}
+
+const getFollowed = async (userID) => {
+    return await getFollowedUsers(userID)
+}
+const getFollower = async(userID) => {
+    return await getFollowersUsers(userID)
+} 
+
+module.exports = { getUserInfo, getCurrentUserPlaylists, getCurrentUserTopArtists,
+    getCurrentUserTopTracks, setCurrentUserPlaylist, fillCurrentUserPlaylist,
+    getUserLastDiscussion, getUserDiscussions, getUserDiscussionMessages,
+    getDiscussionUsersStatus, getUserDiscussionScrollPosition, setUserLastDiscussion,
+    setUserDiscussionScrollPosition, getUser, getTArtist, 
+    getTTrack, getOthers, getFollowed, 
+    getFollower  }
