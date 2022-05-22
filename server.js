@@ -753,5 +753,4 @@ io.on('connection', async socket => {
 
 server.listen(8000, async () => {
     console.log('Listening on port 8000')
-    await createDatabaseIfNotExist()
 })
