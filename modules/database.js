@@ -250,7 +250,7 @@ const getFollowerDiscussionID = async (userID, followerID) => {
     return response.res
 }
 
-module.exports = { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion,
+module.exports = { insertUserInDatabase, insertMessageInDiscussion,
     getLastDiscussionByUserID, getDiscussionsByUserID, getMessagesByDiscussionID,
     getDiscussionUsersByDiscussionID, getDiscussionScrollPositionByUserIDAndByDiscussionID, getUsersFromName,
     getDiscussionsFromName, getDiscussionNumberOfParticipant, getAllDiscussions,
