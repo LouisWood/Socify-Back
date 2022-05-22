@@ -1,4 +1,4 @@
-const { createDatabaseIfNotExist, insertUserInDatabase, insertMessageInDiscussion,
+const { insertUserInDatabase, insertMessageInDiscussion,
     getDiscussionsByUserID, getUsersFromName, getDiscussionsFromName,
     getDiscussionNumberOfParticipant, getAllDiscussions, createDiscussion,
     createDiscussionUser, insertFollower, joinDiscussion,
