@@ -15,7 +15,7 @@ const knex = require('knex')({
 })
 
 const createDatabaseIfNotExist = async () => {
-    knex.schema.hasTable('Artist').then(function(exists) {
+    knex.schema.hasTable('Artist').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Artist', function (table) {
                 table.string('artistID').primary().notNullable()
@@ -25,7 +25,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('Track').then(function(exists) {
+    knex.schema.hasTable('Track').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Track', function (table) {
                 table.string('trackID').primary().notNullable()
@@ -39,7 +39,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('TopArtistList').then(function(exists) {
+    knex.schema.hasTable('TopArtistList').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('TopArtistList', function (table) {
                 table.primary(['listID', 'range'])
@@ -56,7 +56,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('TopTrackList').then(function(exists) {
+    knex.schema.hasTable('TopTrackList').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('TopTrackList', function (table) {
                 table.primary(['ListID', 'range'])
@@ -73,7 +73,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('Users').then(function(exists) {
+    knex.schema.hasTable('Users').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Users', function (table) {
                 table.string('userID').primary().notNullable()
@@ -84,7 +84,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('Followers').then(function(exists) {
+    knex.schema.hasTable('Followers').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Followers', function (table) {
                 table.string('userID').notNullable()
@@ -98,7 +98,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
         
-    knex.schema.hasTable('Discussions').then(function(exists) {
+    knex.schema.hasTable('Discussions').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Discussions', function (table) {
                 table.increments('discussionID').primary()
@@ -110,7 +110,7 @@ const createDatabaseIfNotExist = async () => {
         }
     })
 
-    knex.schema.hasTable('Messages').then(function(exists) {
+    knex.schema.hasTable('Messages').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Messages', function (table) {
                 table.increments('messageID').primary()
@@ -125,7 +125,7 @@ const createDatabaseIfNotExist = async () => {
     })
         
 
-    knex.schema.hasTable('Messages').then(function(exists) {
+    knex.schema.hasTable('Messages').then(async (exists) => {
         if (!exists) {
             await knex.schema.createTable('Participate', function (table) {
                 table.string('userID').notNullable()
